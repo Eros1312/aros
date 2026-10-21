@@ -15,11 +15,9 @@ TOOL_DESCRIPTIONS = {
     'platform.status': 'Lee el estado técnico disponible del servicio. Una lectura en caché no acredita disponibilidad actual; no ejecuta administración, comandos ni cambios del servidor.',
     'connections.status': 'Lee estados registrados y autorización existente del propietario. Una conexión desconectada no se activa aquí; no inicia OAuth ni revela secretos. No confundas configurada con autorizada.',
     'items.create': 'Crea únicamente un elemento interno solicitado por el humano. project_id permite vincularlo a un proyecto interno del mismo área previamente leído, cuando sea el destino solicitado. Conserva fuentes y originales; operation_key estable evita duplicados del turno. Revisa el recibo y llama artifact.verify; no equivale a envío ni publicación.',
-    'items.update': 'Actualiza un elemento interno permitido y leído en este turno usando su versión actual. Solo cambios humanos solicitados; no altera originales UV, PRISMA ni fuentes externas. Verifica el recibo después.',
-    'printing.favorite': 'Cambia solo el favorito de un modelo 3D permitido, previamente leído, usando su versión actual. Conserva licencia, procedencia e imágenes; no descarga, imprime ni compra. Verifica el recibo.',
-    'printing.organizer.create': 'Encola un organizador rectangular abierto con medidas en mm, pared, base y filas/columnas. El humano debe solicitarlo y dar medidas o autorizar valores por defecto. CPU local, sin imagen/GPU/proveedor. El recibo acredita aceptación; NO acredita STL generado ni impresión. Termina con outcome:partial y enlaza el encargo que comprobará el worker.',
+    'items.update': 'Actualiza un elemento interno permitido y leído en este turno usando su versión actual. Solo cambios humanos solicitados; no altera originales importados ni fuentes externas. Verifica el recibo después.',
 }
-_WRITES = {'items.create', 'items.update', 'printing.favorite','printing.organizer.create'}
+_WRITES = {'items.create', 'items.update'}
 _PERMISSION = {'permission_denied', 'write_not_authorized', 'scope_denied', 'scope_invalid', 'authorization_invalid', 'authorization_revoked', 'consent_revoked', 'source_revoked', 'original_protected', 'artifact_scope'}
 _CONFLICT = {'version_conflict', 'source_changed', 'operation_changed', 'operation_conflict'}
 _MISSING = {'source_unavailable', 'resource_unavailable', 'project_unavailable', 'model_unavailable', 'source_missing', 'resource_missing', 'no_results', 'not_found'}

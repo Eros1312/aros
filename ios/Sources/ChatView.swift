@@ -110,7 +110,7 @@ import UniformTypeIdentifiers
             Text("¿Qué necesitas\nsaber ahora?").font(.largeTitle.bold()).tracking(-1)
             Text("Explora tu día, tus proyectos y lo que requiere atención.")
                 .foregroundStyle(ArosTheme.secondary)
-            ForEach(["Prepárame el día", "¿Qué me falta de PRISMA?", "¿Cómo va el servidor?"], id: \.self) { suggestion in
+            ForEach(["Prepárame el día", "¿Qué me falta de Eventos?", "¿Cómo va el servidor?"], id: \.self) { suggestion in
                 Button { focused = false; sendMessage(suggestion) } label: {
                     HStack { Text(suggestion); Spacer(); Image(systemName: "arrow.up.right") }
                         .font(.subheadline).padding(15).glass(radius: 16)

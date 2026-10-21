@@ -15,7 +15,7 @@ from .security import current_user,audit
 CONTROL='github-releases'
 SOURCE='github-release'
 INTERVAL_MINUTES=720
-REPOS=[('openclaw/openclaw','OpenClaw'),('microsoft/TRELLIS.2','TRELLIS.2'),('tashfeenahmed/freellmapi','FreeLLMAPI'),('prusa3d/PrusaSlicer','PrusaSlicer'),('bambulab/BambuStudio','Bambu Studio')]
+REPOS=[('openclaw/openclaw','OpenClaw'),('fastapi/fastapi','FastAPI'),('vercel/next.js','Next.js'),('pydantic/pydantic','Pydantic'),('pymupdf/PyMuPDF','PyMuPDF')]
 DOCS='https://docs.github.com/en/rest/releases/releases#get-the-latest-release'
 router=APIRouter(prefix='/api/v1/github-releases',tags=['Radar de proyectos'])
 UserDep=Annotated[User,Depends(current_user)]

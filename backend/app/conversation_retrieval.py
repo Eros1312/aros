@@ -19,15 +19,15 @@ RESULT_LIMIT = 20
 SOURCE_LIMIT = 40
 SNIPPET_LIMIT = 500
 TOKEN_LIMIT = 12
-TECHNICAL_TERMS = frozenset({'ia', 'ai', '3d', 'gpt', 'uv', 'api', 'pla', 'petg',
-                            'llm', 'stl', 'mac', 'pdf', 'cpu', 'ram', 'usb', 'mcp', 'cad'})
+TECHNICAL_TERMS = frozenset({'ia', 'ai', 'pdf', 'gpt', 'url', 'api', 'css', 'html',
+                            'llm', 'mac', 'pdf', 'cpu', 'ram', 'usb', 'mcp', 'cad'})
 STOP_WORDS = frozenset({
     'ahora', 'antes', 'anterior', 'anteriores', 'continua', 'dame', 'detalles',
     'documento', 'documentos', 'quiero', 'necesito', 'puedes', 'podrias', 'sobre',
     'para', 'esta', 'este', 'estas', 'estos', 'esas', 'esos', 'tarea', 'tareas',
     'tema', 'temas', 'curso', 'cursos', 'asignatura', 'asignaturas', 'resume',
     'resumen', 'explica', 'explicame', 'prepara', 'preparame', 'hacer', 'hazme',
-    'favor', 'material', 'materiales', 'universidad', 'primera', 'segunda',
+    'favor', 'material', 'materiales', 'aprendizaje', 'primera', 'segunda',
     'ultimo', 'ultima', 'tambien', 'tengo', 'tiene', 'tienen', 'como', 'todas',
     'todos', 'esto', 'todo', 'entre', 'desde', 'hasta', 'puedo', 'puede',
     'busca', 'buscar', 'encuentra', 'consultar', 'consulta', 'please', 'about',
@@ -97,9 +97,6 @@ def resource_metadata(row):
     """Only descriptive fields; never copy arbitrary provider metadata or URLs."""
     data = row.data if isinstance(row.data, dict) else {}
     result = {}
-    if row.area=='printing':
-        from .openclaw import printing_context
-        result.update(printing_context(row))
     for key, limit in [('course_title', 240), ('filename', 240), ('category', 80),
                        ('review_state', 80), ('mime', 120), ('extraction_note', 1600)]:
         value = data.get(key)

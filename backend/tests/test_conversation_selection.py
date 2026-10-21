@@ -23,7 +23,7 @@ def test_first_inference_identifies_exact_selection_without_crediting_read(enabl
     assert context['read_resources']==[] and context['observations']==[]
     assert context['execution_protocol']['available_backend_tools']==list(engine.tool_schemas())
     job=enabled.get('/api/v1/agents/runs/'+ident).json()
-    assert job['context_sources'][0]=={'id':source,'title':'Proteínas y estudio','area':'university','kind':'document','source':'manual','version':1,'selected':True}
+    assert job['context_sources'][0]=={'id':source,'title':'Proteínas y estudio','area':'learning','kind':'document','source':'manual','version':1,'selected':True}
     assert 'selection_context' not in job['execution']
     assert enabled.get('/api/v1/chat').json()[-1]['context_sources']==job['context_sources']
 
@@ -31,20 +31,20 @@ def test_first_inference_identifies_exact_selection_without_crediting_read(enabl
 def test_followup_choice_retains_question_options_and_original_goal(enabled,monkeypatch):
     histories=[]
     decisions(monkeypatch,[{'kind':'ask','question':'¿Prefieres el proveedor A por cobertura o el proveedor B por rapidez?'}],histories)
-    first,_=post(enabled,'Recomiéndame un proveedor para el tiempo de Valencia');run(first)
+    first,_=post(enabled,'Recomiéndame un proveedor para el tiempo de Ciudad de ejemplo');run(first)
     decisions(monkeypatch,[{'kind':'finish','summary':'Recomiendo el proveedor A por su cobertura; no he cambiado la configuración.'}],histories)
     following,_=post(enabled,'El que consideres mejor');run(following)
     e=state(following)
     assert e['command']['continuation_of']==first
-    assert e['command']['authorization_goal']=='Recomiéndame un proveedor para el tiempo de Valencia'
+    assert e['command']['authorization_goal']=='Recomiéndame un proveedor para el tiempo de Ciudad de ejemplo'
     assert any('proveedor A' in message['content'] and 'proveedor B' in message['content'] for message in histories[-1])
-    assert any('Valencia' in message['content'] for message in histories[-1])
+    assert any('Ciudad de ejemplo' in message['content'] for message in histories[-1])
     assert e['artifacts']==[]
 
 
 def test_selection_rejects_foreign_revoked_and_wrong_area_before_enqueue(enabled):
-    foreign=resource(foreign=True);wrong_area=resource('prisma');revoked=resource('personal','gmail')
-    for ids,area in [([foreign],'all'),([wrong_area],'university'),([revoked],'all')]:
+    foreign=resource(foreign=True);wrong_area=resource('events');revoked=resource('personal','gmail')
+    for ids,area in [([foreign],'all'),([wrong_area],'learning'),([revoked],'all')]:
         response=enabled.post('/api/v1/chat',json={'text':'Consulta este recurso','integrated':True,'item_ids':ids,'area':area})
         assert response.status_code==404,response.text
     with SessionLocal() as db:
@@ -78,7 +78,7 @@ def test_selection_metadata_does_not_allow_citing_without_read(enabled,monkeypat
 
 def test_context_switch_preserves_plain_history_but_not_excluded_resource_text(enabled,monkeypatch):
     old=resource(description='Old selected confidential content')
-    current=resource('prisma',description='Current selected content')
+    current=resource('events',description='Current selected content')
     histories=[]
     decisions(monkeypatch,[tool('resources.read',{'ids':[old]}),{'kind':'finish','summary':'Old selected confidential content','source_ids':[old]}])
     first,_=post(enabled,'Resume esta fuente',item_ids=[old]);run(first)

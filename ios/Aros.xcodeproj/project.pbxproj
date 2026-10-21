@@ -1,6 +1,6 @@
 // !$*UTF8*$!
 { archiveVersion = 1; classes = {}; objectVersion = 56; objects = {
-8A18F30943F94AACBE927A11 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrismaStudioView.swift; sourceTree = "<group>"; };
+8A18F30943F94AACBE927A11 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsStudioView.swift; sourceTree = "<group>"; };
 ED8641E028204DB9BCB36D16 = { isa = PBXBuildFile; fileRef = 8A18F30943F94AACBE927A11; };
 A3218795D6F74505B8CA92B1 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnologyStudioView.swift; sourceTree = "<group>"; };
 C289ADF1421D4A9D8E5A6B07 = { isa = PBXBuildFile; fileRef = A3218795D6F74505B8CA92B1; };

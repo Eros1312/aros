@@ -24,10 +24,10 @@ def resource(foreign=False,source='manual'):
     with SessionLocal() as db:
         u=db.scalar(select(User).where(User.email=='aros@local'))
         if foreign:u=User(email=str(uuid4())+'@local',password_hash='unused');db.add(u);db.flush()
-        item=Item(user_id=u.id,kind='document',area='university',title='ATP Bioquímica',description='La ATP sintetasa produce ATP mediante un gradiente de protones.',source=source,status='active');db.add(item);db.commit();return item.id
+        item=Item(user_id=u.id,kind='document',area='learning',title='ATP Programación',description='La ATP sintetasa produce ATP mediante un gradiente de protones.',source=source,status='active');db.add(item);db.commit();return item.id
 
 def command(id,**extra):
-    return {'goal':'Preparar un borrador útil sobre ATP sintetasa','title':'Estudio ATP','area':'university','item_ids':[id],'authorize_internal_write':True,'idempotency_key':str(uuid4()),**extra}
+    return {'goal':'Preparar un borrador útil sobre ATP sintetasa','title':'Estudio ATP','area':'learning','item_ids':[id],'authorize_internal_write':True,'idempotency_key':str(uuid4()),**extra}
 
 def enqueue(api,payload):
     r=api.post('/api/v1/agents/autonomous',json=payload);assert r.status_code==202,r.text

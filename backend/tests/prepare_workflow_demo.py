@@ -23,10 +23,10 @@ Base.metadata.create_all(engine)
 with SessionLocal() as db:
     user=setup_user(db)
     user.ai_consent=True
-    project=Item(user_id=user.id,source='manual',kind='project',area='prisma',title='Ejemplo local · PRISMA de otoño',description='Preparar cartel, comprobar imprenta y revisar la lista. Proyecto de demostración sin datos de producción.',status='active',is_demo=True)
+    project=Item(user_id=user.id,source='manual',kind='project',area='events',title='Ejemplo local · Eventos de otoño',description='Preparar cartel, comprobar imprenta y revisar la lista. Proyecto de demostración sin datos de producción.',status='active',is_demo=True)
     db.add(project);db.flush()
-    source=Item(user_id=user.id,source='upload',kind='document',area='prisma',title='Ejemplo local · Brief del cartel.txt',description='Cartel de demostración: revisar hora, lugar y nombre del evento antes de aprobar. Ningún diseño está aprobado todavía.',status='active',is_demo=True,blob=b'Offline demo original',data={'project_id':project.id,'filename':'Brief de ejemplo.txt','mime':'text/plain','review_state':'unconfirmed'})
-    task=Item(user_id=user.id,source='manual',kind='task',area='prisma',title='Ejemplo local · Revisar la información del cartel',status='pending',priority='high',is_demo=True,data={'project_id':project.id})
+    source=Item(user_id=user.id,source='upload',kind='document',area='events',title='Ejemplo local · Brief del cartel.txt',description='Cartel de demostración: revisar hora, lugar y nombre del evento antes de aprobar. Ningún diseño está aprobado todavía.',status='active',is_demo=True,blob=b'Offline demo original',data={'project_id':project.id,'filename':'Brief de ejemplo.txt','mime':'text/plain','review_state':'unconfirmed'})
+    task=Item(user_id=user.id,source='manual',kind='task',area='events',title='Ejemplo local · Revisar la información del cartel',status='pending',priority='high',is_demo=True,data={'project_id':project.id})
     db.add_all([source,task]);db.commit();project_id=project.id;source_id=source.id
     original_model=settings.openclaw_model
     settings.openclaw_model='test/model';conversation.MODEL='test/model';user.ai_model='test/model';db.commit()
@@ -34,7 +34,7 @@ with SessionLocal() as db:
     queued=conversation.enqueue(db,user,'Lee el proyecto y el brief, y crea una nota interna en este proyecto con los puntos que debo revisar.',item_ids=[project.id,source.id],project_id=project.id,thread_id=project.id)
     ident=queued['id']
 values=[{'kind':'tool','tool':'resources.read','arguments':{'ids':[project_id,source_id]}},
-        {'kind':'tool','tool':'items.create','arguments':{'kind':'note','area':'prisma','title':'Ejemplo local · Lista de revisión del cartel','description':'Comprobar la hora, el lugar y el nombre del evento. El diseño sigue sin aprobación. Resultado generado por una prueba determinista local, sin llamada al modelo.','status':'active','project_id':project_id,'operation_key':'offline-demo-note'}},
+        {'kind':'tool','tool':'items.create','arguments':{'kind':'note','area':'events','title':'Ejemplo local · Lista de revisión del cartel','description':'Comprobar la hora, el lugar y el nombre del evento. El diseño sigue sin aprobación. Resultado generado por una prueba determinista local, sin llamada al modelo.','status':'active','project_id':project_id,'operation_key':'offline-demo-note'}},
         lambda e:{'kind':'tool','tool':'artifact.verify','arguments':{'artifact_id':e['artifacts'][0]['id']}},
         {'kind':'finish','summary':'He guardado y comprobado una lista de revisión en el proyecto de ejemplo. Es una prueba local con decisiones prefijadas; no ha habido una conexión real con IA.','source_ids':[project_id,source_id]}]
 index=0

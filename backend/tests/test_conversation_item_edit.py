@@ -35,7 +35,7 @@ def test_conversation_artifact_ui_edit_cas_and_archive(auth,kind):
     assert patch(auth,ident,body).status_code==409
     assert patch(auth,ident,payload(edited,status='archived')).status_code==200
 
-@pytest.mark.parametrize('change',[{'data':{}},{'data':{'source_references':[]}},{'data':{'creation_hash':'forged'}},{'data':{'execution_id':'forged'}},{'data':{'history':{}}},{'data':{'location':'new'}},{'area':'university'},{'kind':'task'}])
+@pytest.mark.parametrize('change',[{'data':{}},{'data':{'source_references':[]}},{'data':{'creation_hash':'forged'}},{'data':{'execution_id':'forged'}},{'data':{'history':{}}},{'data':{'location':'new'}},{'area':'learning'},{'kind':'task'}])
 def test_conversation_metadata_and_scope_cannot_be_removed_or_forged(auth,change):
     ident=seed();initial=auth.get('/api/v1/items/'+ident).json()
     assert auth.patch('/api/v1/items/'+ident,json=payload(initial,**change)).status_code==422
@@ -63,7 +63,7 @@ def test_all_day_date_edit_rejected_instead_of_leaving_old_interval(auth):
     assert result.status_code==422 and 'intervalo' in result.text
     assert auth.get('/api/v1/items/'+ident).json()==initial
 
-@pytest.mark.parametrize('source',['university','university-browser','prisma-file','canva'])
+@pytest.mark.parametrize('source',['learning','learning-browser','events-file','canva'])
 def test_imported_originals_remain_uneditable(auth,source):
     ident=seed(source=source);initial=auth.get('/api/v1/items/'+ident)
     # REST-connected originals may be hidden until the owner grants access.

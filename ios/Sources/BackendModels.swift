@@ -54,7 +54,7 @@ struct Resource: Codable, Identifiable {
 }
 
 enum ResourceKind {
-    static let names = ["task":"Tarea", "event":"Evento", "document":"Documento", "email":"Correo", "order":"Pedido", "model":"Modelo 3D", "material":"Material", "news":"Noticia", "note":"Nota", "project":"Proyecto", "service":"Servicio", "reminder":"Recordatorio", "memory":"Memoria", "contact":"Contacto", "expense":"Gasto"]
+    static let names = ["task":"Tarea", "event":"Evento", "document":"Documento", "email":"Correo", "order":"Pedido", "link":"Enlace", "news":"Noticia", "note":"Nota", "project":"Proyecto", "service":"Servicio", "reminder":"Recordatorio", "memory":"Memoria", "contact":"Contacto", "expense":"Gasto"]
     static let statuses = ["pending":"Pendiente", "active":"Activo", "done":"Completado", "archived":"Archivado", "in_transit":"En camino", "delivered":"Entregado", "cancelled":"Cancelado"]
 }
 
@@ -229,67 +229,6 @@ struct RemoteModelPreferences: Decodable {
     }
 }
 
-struct RemotePrintingFeed: Decodable {
-    let items: [RemotePrintRecommendation]
-    let status: Status
-    let pagination: Pagination?
-    struct Pagination: Decodable { let offset: Int; let limit: Int; let total: Int; let nextOffset: Int? }
-    struct Status: Decodable {
-        let lastRefresh: String?
-        let nextRefresh: String?
-        let discovered: Int?
-        let deficit: Int?
-        let error: String?
-        let enabled: Bool?
-        let running: Bool?
-        let queued: Bool?
-        let total: Int?
-        let target: Int?
-        var updating: Bool { running == true || queued == true }
-    }
-}
-struct RemotePrintingRefresh: Decodable { let queued: Bool?; let running: Bool?; let runId: String? }
-struct RemotePrintingFavorite: Decodable { let id: String; let favorite: Bool }
-struct RemotePrintRecommendation: Decodable, Identifiable {
-    let id: String
-    let title: String
-    let description: String
-    let sourceUrl: String
-    let imageUrl: String?
-    let imageUrls: [String]?
-    let license: String?
-    let source: String
-    let publishedAt: String?
-    let recommendedAt: String
-    let usage: String
-    let profileTags: [String]
-    let favorite: Bool?
-    let licenseUrl: String?
-    let licenseState: String?
-    var spanishSummary: String {
-        let tags = Set(profileTags.map { $0.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "es_ES")) })
-        if tags.contains("quimica") { return "Ideas relacionadas con química y laboratorio." }
-        if tags.contains("organizacion") { return "Para explorar soluciones de organización." }
-        if tags.contains("prisma") { return "Ideas para tus proyectos y eventos de PRISMA." }
-        if tags.contains("tecnologia") { return "Ideas para proyectos de tecnología y electrónica." }
-        return "Explora su utilidad en la ficha del autor."
-    }
-    func matches(_ query: String, tag: String = "all") -> Bool {
-        let text = ([title, description, usage, source, spanishSummary] + profileTags).joined(separator: " ")
-        return (tag == "all" || profileTags.contains(tag)) && (query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.localizedStandardContains(query.trimmingCharacters(in: .whitespacesAndNewlines)))
-    }
-    static func safeURL(_ value: String?) -> URL? {
-        guard let value, let url = URL(string: value), url.scheme == "https", url.host != nil, url.user == nil, url.password == nil else { return nil }
-        return url
-    }
-    var photos: [URL] {
-        var seen = Set<String>()
-        return ((imageUrls ?? []) + [imageUrl].compactMap { $0 }).compactMap { value in
-            guard seen.insert(value).inserted, let url = Self.safeURL(value) else { return nil }
-            return url
-        }
-    }
-}
 struct RemoteWeather: Decodable {
     let configured: Bool
     let location: City?
@@ -319,26 +258,26 @@ struct RemoteWeather: Decodable {
     }
 }
 
-struct RemotePrismaLibrary: Decodable {
+struct RemoteEventsLibrary: Decodable {
     let assets: [Resource]
     let canva: Canva
     struct Canva: Decodable { let configured: Bool; let connected: Bool; let designModel: String?; let designAvailable: Bool?; let redirectUri: String?; let scopes: [String]?; let error: String? }
 }
-enum PrismaHomeSummary {
+enum EventsHomeSummary {
     static func rows(_ resources: [Resource]) -> [SummaryRow] {
-        let active = resources.filter { $0.area == .prisma && $0.status != "archived" }
+        let active = resources.filter { $0.area == .events && $0.status != "archived" }
         return [
-            SummaryRow(id: "prisma-originals", title: "\(active.filter { $0.source == "prisma-file" }.count) originales", subtitle: "Carteles, rascas, pegatinas y logos", symbol: "doc.text"),
-            SummaryRow(id: "prisma-designs", title: "\(active.filter { ["canva", "canva-codex"].contains($0.source) }.count) diseños en Canva", subtitle: "Acceso a tus diseños guardados", symbol: "square.stack"),
-            SummaryRow(id: "prisma-context", title: "\(active.filter { $0.source == "prisma-context" }.count) conversaciones de referencia", subtitle: "Contexto para tus proyectos", symbol: "text.bubble")
+            SummaryRow(id: "events-originals", title: "\(active.filter { $0.source == "events-file" }.count) originales", subtitle: "Programas, documentos y diseños", symbol: "doc.text"),
+            SummaryRow(id: "events-designs", title: "\(active.filter { ["canva", "canva-codex"].contains($0.source) }.count) diseños en Canva", subtitle: "Acceso a tus diseños guardados", symbol: "square.stack"),
+            SummaryRow(id: "events-context", title: "\(active.filter { $0.source == "events-context" }.count) conversaciones de referencia", subtitle: "Contexto para tus proyectos", symbol: "text.bubble")
         ]
     }
 }
 
-enum PrismaAssetOrder {
+enum EventsAssetOrder {
     static func ordered(_ resources: [Resource]) -> [Resource] {
         func priority(_ item: Resource) -> Int {
-            if item.source == "prisma-file" { return 0 }
+            if item.source == "events-file" { return 0 }
             let ext = (item.data["filename"]?.text ?? "").split(separator: ".").last.map(String.init)?.lowercased() ?? ""
             if ["pdf", "png", "jpg", "jpeg"].contains(ext) || item.data["preview_item_id"]?.text.isEmpty == false { return 1 }
             if item.data["filename"]?.text.isEmpty == false { return 2 }
@@ -348,20 +287,7 @@ enum PrismaAssetOrder {
     }
 }
 struct RemoteAuthorization: Decodable { let url: String }
-struct RemoteUniversityCalendar: Decodable {
-    let configured: Bool
-    let count: Int
-    let lastSync: String?
-    let sourceUrl: String?
-    let group: String
-    let academicYear: String
-    let readOnly: Bool
-    let detail: String?
-    let status: String?
-    let error: String?
-}
-
-enum UniversityResourceOrder {
+enum LearningResourceOrder {
     static func date(_ value: String?) -> Date? {
         guard let value else { return nil }
         let formatter = ISO8601DateFormatter(); formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -379,7 +305,7 @@ enum UniversityResourceOrder {
     static func upcoming(_ resources: [Resource], now: Date = .now) -> [Resource] {
         let times = timings(resources)
         return resources.filter { resource in
-            resource.area == .university && resource.kind == "event" && !["archived", "cancelled"].contains(resource.status) &&
+            resource.area == .learning && resource.kind == "event" && !["archived", "cancelled"].contains(resource.status) &&
             (times[resource.id]?.end ?? .distantPast) > now
         }.sorted { (times[$0.id]?.start ?? .distantFuture) < (times[$1.id]?.start ?? .distantFuture) }
     }
@@ -446,24 +372,5 @@ struct NativeCalendarDates {
     func overlaps(_ event: RemoteCalendarPlan.CalendarEntry, day: Date) -> Bool {
         let start = calendar.startOfDay(for: day), end = calendar.date(byAdding: .day, value: 1, to: start)!
         return event.start < end && event.end > start
-    }
-}
-
-struct PrintingCollectionQuery: Equatable {
-    let text: String
-    let category: String
-    let favorite: Bool
-    init(text: String = "", category: String = "all", favorite: Bool = false) {
-        self.text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.category = category; self.favorite = favorite
-    }
-    func path(offset: Int = 0, limit: Int = 60) -> String {
-        var parts = URLComponents()
-        var items = [URLQueryItem(name: "offset", value: String(max(0, offset))), URLQueryItem(name: "limit", value: String(min(100, max(1, limit))))]
-        if !text.isEmpty { items.append(URLQueryItem(name: "q", value: text)) }
-        if category != "all" { items.append(URLQueryItem(name: "category", value: category)) }
-        if favorite { items.append(URLQueryItem(name: "favorite", value: "true")) }
-        parts.queryItems = items
-        return "/printing/recommendations?" + (parts.percentEncodedQuery ?? "")
     }
 }

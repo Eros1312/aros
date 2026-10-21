@@ -47,7 +47,6 @@ def event_interval(item,tz):
             start=start.astimezone(timezone.utc);end=start+timedelta(hours=1);assumed=True
         except (ValueError,TypeError,OverflowError):return None
     category=str(data.get('session_type') or data.get('event_type') or data.get('category') or '')
-    if not category and item.source=='uv-calendar':category='exam' if data.get('exam') else 'class'
     return {'id':item.id,'title':item.title,'area':item.area,'start':start,'end':end,
             'all_day':bool(data.get('all_day')),'estimated_duration':assumed,
             'location':str(data.get('location') or ''),'category':category or 'event',

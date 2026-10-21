@@ -57,9 +57,9 @@
           ]
         }
       },
-      "university": {
-        "name": "Universidad",
-        "workspace": "/home/node/.openclaw/workspaces/university",
+      "learning": {
+        "name": "Aprendizaje",
+        "workspace": "/home/node/.openclaw/workspaces/learning",
         "model": {
           "primary": "CONFIGURE_EXPLICIT_MODEL",
           "fallbacks": []
@@ -78,9 +78,9 @@
           ]
         }
       },
-      "prisma": {
-        "name": "PRISMA",
-        "workspace": "/home/node/.openclaw/workspaces/prisma",
+      "events": {
+        "name": "Eventos",
+        "workspace": "/home/node/.openclaw/workspaces/events",
         "model": {
           "primary": "CONFIGURE_EXPLICIT_MODEL",
           "fallbacks": []
@@ -120,9 +120,9 @@
           ]
         }
       },
-      "printing": {
-        "name": "Impresión 3D",
-        "workspace": "/home/node/.openclaw/workspaces/printing",
+      "resources": {
+        "name": "Recursos",
+        "workspace": "/home/node/.openclaw/workspaces/resources",
         "model": {
           "primary": "CONFIGURE_EXPLICIT_MODEL",
           "fallbacks": []

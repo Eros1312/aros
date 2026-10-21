@@ -13,10 +13,10 @@ from .config import settings
 
 PROMPTS={
  'aros':'Revisa los recursos actuales de mis áreas. Resume cambios relevantes y prioridades; prepara propuestas locales solo cuando estén justificadas. Si no hay nada relevante, responde brevemente.',
- 'university':'Revisa documentos descargados de Aula Virtual UV y mis pendientes académicos. Identifica nuevas lecturas, fechas y próximos pasos de estudio. Puedes proponer notas o planificación local en Aros. Moodle es exclusivamente de lectura y descarga: nunca subir, entregar ni modificar allí.',
- 'prisma':'Revisa proyectos y tareas PRISMA actuales. Resume bloqueos y próximos pasos concretos; prepara propuestas locales para mi revisión.',
+ 'learning':'Revisa mis lecturas, notas, objetivos y tareas de aprendizaje. Resume dudas y próximos pasos basados en los recursos actuales.',
+ 'events':'Revisa proyectos y tareas Eventos actuales. Resume bloqueos y próximos pasos concretos; prepara propuestas locales para mi revisión.',
  'technology':'Revisa mis notas y proyectos de tecnología. Destaca novedades disponibles en los recursos actuales y próximos pasos concretos.',
- 'printing':'Revisa modelos, pedidos y tareas de impresión 3D. Resume bloqueos, materiales y prioridades según los recursos actuales; no envíes trabajos a una impresora.',
+ 'resources':'Revisa documentos, notas, enlaces y proyectos guardados. Identifica información pendiente de organizar y prepara propuestas locales para mi revisión.',
  'server':'Revisa recursos y tareas de servidor. Señala incidencias documentadas y prioridades; no ejecutes comandos ni reinicies servicios.',
  'personal':'Revisa agenda, recordatorios y pendientes personales. Resume fechas próximas y prioridades; no envíes mensajes a terceros.'}
 router=APIRouter()
@@ -48,7 +48,7 @@ def review_fingerprint(db,user,agent_id,at=None):
             except (ValueError,TypeError):bucket='invalid'
         digest.update(json.dumps([ident,version,title,description,status,priority,due,data,bucket],sort_keys=True,ensure_ascii=False,separators=(',',':')).encode())
     # Availability changes can matter even when an area has no saved documents.
-    relevant={'university':{'university','university-calendar'},'prisma':{'canva'},'printing':{'_printing-discovery'},'technology':{'rss','github'},'personal':{'gmail','calendar','drive','weather'},'server':{'server','github','vercel'}}
+    relevant={'learning':{'drive','calendar'},'events':{'canva'},'resources':{'drive','notion'},'technology':{'rss','github'},'personal':{'gmail','calendar','drive','weather'},'server':{'server','github','vercel'}}
     for ident,status in db.execute(select(Connector.id,Connector.status).where(Connector.user_id==user.id).order_by(Connector.id)):
         if agent_id=='aros' or ident in relevant.get(agent_id,set()):digest.update(json.dumps([ident,status]).encode())
     return digest.hexdigest()

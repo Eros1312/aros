@@ -6,7 +6,32 @@ Aros reúne tareas, documentos, calendario y conversaciones en una aplicación w
 
 **English:** Aros is a self-hosted personal workspace with a FastAPI backend and a Next.js client. It combines tasks, documents, calendar and persistent agent workflows with scoped permissions and verifiable results. The local demo runs without an AI account. The interface is currently in Spanish; contributions and issues in English are welcome.
 
-**Estado: primera versión pública, 0.1.0.** Procede de una aplicación personal y todavía conserva áreas especializadas. La web es el cliente principal. El cliente iOS es experimental y se entrega como código fuente. No se afirma adopción externa ni compatibilidad universal con servicios de terceros.
+**Estado: primera versión pública, 0.1.0.** La web es el cliente principal. El cliente iOS es experimental y se entrega como código fuente. No se afirma adopción externa ni compatibilidad universal con servicios de terceros.
+
+## Así se ve
+
+Capturas reales de la versión web con datos de demostración. El panel de servidor muestra las métricas del equipo de prueba.
+
+**Inicio:** espacios de trabajo, agenda y asuntos pendientes en una misma pantalla.
+
+![Inicio de Aros en escritorio con seis espacios de trabajo, agenda y datos de ejemplo](docs/images/aros-inicio-escritorio.png)
+
+<details>
+<summary>Ver proyectos, documentos y la versión móvil</summary>
+
+**Proyectos:** tareas, documentos y resultados vinculados a un objetivo.
+
+![Proyecto de ejemplo de Aros con próximos pasos y materiales organizados](docs/images/aros-proyecto-tareas.png)
+
+**Aprendizaje:** cursos, objetivos, búsqueda y materiales en el mismo espacio.
+
+![Espacio de aprendizaje de Aros con cursos, documentos y tareas de ejemplo](docs/images/aros-aprendizaje.png)
+
+**En el móvil:** la misma aplicación web adapta los proyectos y la navegación a una pantalla pequeña.
+
+<img src="docs/images/aros-proyectos-movil.png" alt="Vista móvil de la web de Aros con proyectos de demostración y navegación inferior" width="320">
+
+</details>
 
 ## Probar en local
 
@@ -36,7 +61,7 @@ La instalación descarga dependencias de los registros oficiales. Una vez instal
 - Conversaciones persistentes y trabajos de agentes con estados, permisos y comprobación de resultados.
 - Propuestas revisables, control de acceso a fuentes y revocación de acceso a contenido derivado.
 - Conectores opcionales para servicios externos, cuya configuración y autorización corresponden al operador.
-- Áreas de estudio, diseño y modelos 3D heredadas de la aplicación original. Los catálogos personales y los documentos de terceros no se distribuyen.
+- Espacios de Aprendizaje, Eventos y Recursos para organizar cursos, encuentros, archivos, notas y enlaces. No dependen de una institución ni de un negocio concreto.
 
 El proyecto no incluye modelos de IA, suscripciones, credenciales, acceso a cuentas ni material privado. Una prueba con respuestas simuladas no acredita la conexión a un proveedor real.
 

@@ -1,5 +1,5 @@
 /* Aros shared visual theme; keep responsive and accessibility overrides together. */
-:root{--background:#f6f7fc;--surface:#ffffffcc;--text-primary:#111319;--text-secondary:#657087;--separator:rgba(119,134,166,.15);--blue:#2878ff;--university:#5085ff;--prisma:#ff4268;--technology:#ac58f3;--printing:#16c89a;--server:#8490a5;--personal:#ffa632}
+:root{--background:#f6f7fc;--surface:#ffffffcc;--text-primary:#111319;--text-secondary:#657087;--separator:rgba(119,134,166,.15);--blue:#2878ff;--learning:#5085ff;--events:#ff4268;--technology:#ac58f3;--resources:#16c89a;--server:#8490a5;--personal:#ffa632}
 body{background:radial-gradient(ellipse at 75% 9%,#e2e7ff99,transparent 45%),radial-gradient(ellipse at 5% 76%,#efe5ff99,transparent 42%),#f7f8fc}
 .orb{position:relative;border-radius:50%;background:radial-gradient(circle at 23% 22%,#e9faff 0%,#71cefb 25%,#b89aeb 62%,#f7b0cf 95%);box-shadow:inset 0 0 10px #fff6,0 3px 9px #8295d721;flex-shrink:0}
 .orb:after{content:none}
@@ -67,9 +67,9 @@ body{background:radial-gradient(ellipse at 75% 9%,#e2e7ff99,transparent 45%),rad
 .login{background:radial-gradient(ellipse at 75% 5%,#dfe6ff,transparent 65%),#f7f8fc}.login-panel{border-radius:28px;background:#ffffffcf;border-color:#fff;box-shadow:0 20px 70px #7689b11f}
 
 .ref-date{text-transform:none}.ref-date::first-letter{text-transform:uppercase}
-.ref-university .ref-decoration{width:160px;height:155px;clip-path:polygon(0 24%,52% 0,100% 25%,91% 100%,15% 95%);background:linear-gradient(115deg,transparent 35%,#d4d1ff70 36% 57%,transparent 58%),linear-gradient(40deg,#bce8ff77 0 43%,#e8e0ff55 44% 65%,#dbd9ff88 66%);border-radius:35%;transform:rotate(13deg)}
+.ref-learning .ref-decoration{width:160px;height:155px;clip-path:polygon(0 24%,52% 0,100% 25%,91% 100%,15% 95%);background:linear-gradient(115deg,transparent 35%,#d4d1ff70 36% 57%,transparent 58%),linear-gradient(40deg,#bce8ff77 0 43%,#e8e0ff55 44% 65%,#dbd9ff88 66%);border-radius:35%;transform:rotate(13deg)}
 .ref-technology .ref-decoration{width:105px;height:105px;right:-18px;bottom:-9px;border-radius:50%;background:radial-gradient(circle at 23% 22%,#e9faff 0%,#71cefb 25%,#b89aeb 62%,#f7b0cf 95%);opacity:.48;filter:blur(1px)}
-.ref-printing .ref-decoration{background:repeating-radial-gradient(ellipse at 40% 50%,transparent 0 8px,#b7ccc944 9px 12px,transparent 13px 22px);opacity:.35;border:0;border-radius:40%;right:-55px;bottom:-5px}
+.ref-resources .ref-decoration{background:repeating-radial-gradient(ellipse at 40% 50%,transparent 0 8px,#b7ccc944 9px 12px,transparent 13px 22px);opacity:.35;border:0;border-radius:40%;right:-55px;bottom:-5px}
 .ref-model-preview{position:absolute;right:-8px;bottom:-10px;width:115px;height:150px;object-fit:cover;opacity:.22;border-radius:34px;z-index:-1;pointer-events:none;mask-image:linear-gradient(130deg,transparent 5%,#000 65%);-webkit-mask-image:linear-gradient(130deg,transparent 5%,#000 65%)}
 @media(prefers-reduced-transparency:reduce){.ref-model-preview{display:none}}
 

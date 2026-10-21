@@ -18,7 +18,7 @@ def enabled(auth,monkeypatch):
     monkeypatch.setattr(settings,'openclaw_token','test-only')
     return auth
 
-def resource(area='university',source='manual',foreign=False,description='Las proteínas se desnaturalizan a 75 °C. Valencia es la ciudad del ejemplo.'):
+def resource(area='learning',source='manual',foreign=False,description='Las proteínas se desnaturalizan a 75 °C. Ciudad de ejemplo es la ciudad del ejemplo.'):
     with SessionLocal() as db:
         user=db.scalar(select(User).where(User.email=='aros@local'))
         if foreign:user=User(email=str(uuid4())+'@other.local',password_hash='unused');db.add(user);db.flush()
@@ -101,13 +101,13 @@ def test_idempotency_and_single_active_thread(enabled):
     assert enabled.post('/api/v1/chat',json={'text':'Siguiente','integrated':True}).status_code==202
 
 def test_integrated_agent_cross_area_and_question_followup(enabled,monkeypatch):
-    personal=resource('personal');university=resource('university');messages=[]
-    decisions(monkeypatch,[tool('resources.read',{'ids':[personal,university]}),{'kind':'ask','question':'¿A qué hora quieres repasarlo?'}],messages)
-    result=enabled.post('/api/v1/agents/runs',json={'agent_id':'university','text':'Compara mis documentos de universidad y personal','integrated':True});assert result.status_code==202,result.text
+    personal=resource('personal');learning=resource('learning');messages=[]
+    decisions(monkeypatch,[tool('resources.read',{'ids':[personal,learning]}),{'kind':'ask','question':'¿A qué hora quieres repasarlo?'}],messages)
+    result=enabled.post('/api/v1/agents/runs',json={'agent_id':'learning','text':'Compara mis documentos de aprendizaje y personal','integrated':True});assert result.status_code==202,result.text
     id=result.json()['id'];run(id);assert state(id)['state']=='waiting_information'
     dto=enabled.get('/api/v1/agents/runs/'+id).json();assert dto['status']=='completed' and not dto['resources_unavailable']
     messages=[];decisions(monkeypatch,[{'kind':'finish','summary':'Entendido: a las 18:00; no he creado eventos.'}],messages)
-    next=enabled.post('/api/v1/agents/runs',json={'agent_id':'university','text':'A las 18:00','integrated':True});assert next.status_code==202,next.text
+    next=enabled.post('/api/v1/agents/runs',json={'agent_id':'learning','text':'A las 18:00','integrated':True});assert next.status_code==202,next.text
     run(next.json()['id']);assert any('hora' in m['content'] for m in messages[0])
 
 def test_read_scope_foreign_and_typed_no_shell(enabled,monkeypatch):
@@ -232,10 +232,10 @@ def test_question_in_other_agent_thread_does_not_authorize_new_chat(enabled,monk
 def test_search_matches_old_document_before_candidate_cap_and_folds_accents(enabled,monkeypatch):
     with SessionLocal() as db:
         user=db.scalar(select(User).where(User.email=='aros@local'))
-        old=Item(user_id=user.id,area='university',kind='document',source='manual',title='QUÍMICA analítica: procedimiento de laboratorio',description='Este guion debe aparecer aunque el calendario tenga muchos registros posteriores.',status='active',updated_at='2024-01-01T00:00:00+00:00');db.add(old);db.flush();ident=old.id
-        db.add_all(Item(user_id=user.id,area='university',kind='event',source='manual',title='Clase '+str(n),description='Importación reciente sin coincidencias.',status='active') for n in range(510));db.commit()
-    calls=decisions(monkeypatch,[tool('resources.search',{'query':'quimica laboratorio','area':'university'}),tool('resources.read',{'ids':[ident]}),{'kind':'finish','summary':'He localizado el procedimiento de química analítica.','source_ids':[ident]}])
-    id,_=post(enabled,'Busca el procedimiento de química analítica y laboratorio');run(id)
+        old=Item(user_id=user.id,area='learning',kind='document',source='manual',title='GESTIÓN analítica: procedimiento de laboratorio',description='Este guion debe aparecer aunque el calendario tenga muchos registros posteriores.',status='active',updated_at='2024-01-01T00:00:00+00:00');db.add(old);db.flush();ident=old.id
+        db.add_all(Item(user_id=user.id,area='learning',kind='event',source='manual',title='Clase '+str(n),description='Importación reciente sin coincidencias.',status='active') for n in range(510));db.commit()
+    calls=decisions(monkeypatch,[tool('resources.search',{'query':'gestion laboratorio','area':'learning'}),tool('resources.read',{'ids':[ident]}),{'kind':'finish','summary':'He localizado el procedimiento de gestión analítica.','source_ids':[ident]}])
+    id,_=post(enabled,'Busca el procedimiento de gestión analítica y laboratorio');run(id)
     results=calls[1]['observations'][0]['resources'];assert ident in [r['id'] for r in results] and state(id)['state']=='completed'
 
 def test_first_integrated_turn_preserves_safe_legacy_chat_context(enabled,monkeypatch):
@@ -283,7 +283,7 @@ def test_selected_sources_do_not_forward_unselected_legacy_or_thread_excerpts(en
 
 def test_partial_original_extraction_remains_partial_after_all_indexed_text_read(enabled,monkeypatch):
     actual_infer=engine.infer
-    source=resource(source='uv-browser',description='Todo el texto indexado de las primeras páginas del PDF.')
+    source=resource(source='upload',description='Todo el texto indexado de las primeras páginas del PDF.')
     with SessionLocal() as db:
         row=db.get(Item,source);row.data={'extracted':True,'partial':True,'extraction_note':'Solo se indexaron las primeras 40 páginas; el documento original tiene más páginas.'};db.commit()
     decisions(monkeypatch,[tool('resources.read',{'ids':[source],'max_chars':1000}),{'kind':'finish','summary':'He leído el texto indexado, pero la extracción del PDF original es parcial.','source_ids':[source]}])

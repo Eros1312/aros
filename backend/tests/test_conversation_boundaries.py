@@ -33,27 +33,28 @@ def test_every_exposed_context_becomes_revocable_lineage(enabled,monkeypatch,con
     assert enabled.get('/api/v1/agents/runs/'+ident).json()['resources_unavailable']
 
 
-@pytest.mark.parametrize('revocation',[{'revoked':True},{'access_revoked':True},{'available':False},'uv-calendar','withdrawn','canceled'])
+@pytest.mark.parametrize('revocation',[{'revoked':True},{'access_revoked':True},{'available':False},'calendar','withdrawn','canceled'])
 def test_direct_download_and_transitive_derived_access_follow_revocation(enabled,revocation):
     with SessionLocal() as db:
         user=db.scalar(select(User).where(User.email=='aros@local'))
-        source=Item(user_id=user.id,kind='document',area='university',title='Original',description='Private body',source='uv-calendar' if revocation=='uv-calendar' else 'manual',blob=b'private',status='active')
+        if revocation=='calendar':db.get(Connector,('calendar',user.id)).status='connected'
+        source=Item(user_id=user.id,kind='document',area='learning',title='Original',description='Private body',source='calendar' if revocation=='calendar' else 'manual',blob=b'private',status='active')
         db.add(source);db.flush()
         parent=source
         for index in range(2):
-            child=Item(user_id=user.id,kind='note',area='university',title=f'Derived {index}',description='Private body',source='agent-conversation',status='active',data={'origin_user_prompt':True,'source_references':[{'id':parent.id,'version':parent.version,'content_hash':resource_fingerprint(parent)}]})
+            child=Item(user_id=user.id,kind='note',area='learning',title=f'Derived {index}',description='Private body',source='agent-conversation',status='active',data={'origin_user_prompt':True,'source_references':[{'id':parent.id,'version':parent.version,'content_hash':resource_fingerprint(parent)}]})
             db.add(child);db.flush();parent=child
         ident=source.id;derived=parent.id;db.commit()
         assert db.scalar(select(Item.id).where(Item.id==derived,visible_items_clause(db,user)))==derived
         if isinstance(revocation,dict):source.data=revocation
-        elif revocation=='uv-calendar':
-            connector=db.get(Connector,('university-calendar',user.id))
+        elif revocation=='calendar':
+            connector=db.get(Connector,('calendar',user.id))
             if connector:connector.status='revoked'
-            else:db.add(Connector(id='university-calendar',user_id=user.id,name='UV calendar',status='revoked'))
+            else:db.add(Connector(id='calendar',user_id=user.id,name='Calendario',status='revoked'))
         else:source.status=revocation
         db.commit()
     assert enabled.get('/api/v1/items/'+derived).status_code==404
-    if isinstance(revocation,dict) or revocation=='uv-calendar':
+    if isinstance(revocation,dict) or revocation=='calendar':
         assert enabled.get('/api/v1/documents/'+ident+'/download').status_code==404
 
 
@@ -77,7 +78,7 @@ def test_project_threads_and_plain_history_are_isolated(enabled,monkeypatch):
     histories=[];decisions(monkeypatch,[{'kind':'finish','summary':'Project B only.'}],histories)
     second,_=post(enabled,'Another project',project_id=b['id'],thread_id=b['id']);run(second)
     assert histories==[[]]
-    assert state(second)['scope']=={'area':'prisma','areas':['prisma'],'item_ids':[b['id']],'project_id':b['id']}
+    assert state(second)['scope']=={'area':'events','areas':['events'],'item_ids':[b['id']],'project_id':b['id']}
     assert all(message['job_id']==second for message in enabled.get('/api/v1/chat',params={'project_id':b['id'],'thread_id':b['id']}).json())
     assert enabled.get('/api/v1/chat').json()==[]
     assert enabled.post('/api/v1/chat',json={'text':'Wrong thread','integrated':True,'project_id':a['id'],'thread_id':b['id']}).status_code==422
@@ -85,20 +86,20 @@ def test_project_threads_and_plain_history_are_isolated(enabled,monkeypatch):
 
 def test_project_upload_selects_exact_material_and_rejects_unlinked_foreign_scope(enabled):
     p=project(enabled)
-    uploaded=enabled.post('/api/v1/documents/upload',data={'area':'prisma','project_id':p['id']},files={'file':('brief.txt',b'Actual brief','text/plain')})
+    uploaded=enabled.post('/api/v1/documents/upload',data={'area':'events','project_id':p['id']},files={'file':('brief.txt',b'Actual brief','text/plain')})
     assert uploaded.status_code==201,uploaded.text
     material=uploaded.json();assert material['data']['project_id']==p['id']
     ident,_=post(enabled,'Consulta este material',project_id=p['id'],item_ids=[material['id']])
     assert set(state(ident)['scope']['item_ids'])=={p['id'],material['id']}
     enabled.post('/api/v1/agents/runs/'+ident+'/cancel')
-    unrelated=resource('prisma')
+    unrelated=resource('events')
     assert enabled.post('/api/v1/chat',json={'text':'Consulta','integrated':True,'project_id':p['id'],'item_ids':[unrelated]}).status_code==404
     assert enabled.post('/api/v1/documents/upload',data={'area':'personal','project_id':p['id']},files={'file':('x.txt',b'x','text/plain')}).status_code==422
 
 
 def test_project_membership_change_stops_before_provider(enabled,monkeypatch):
     p=project(enabled)
-    upload=enabled.post('/api/v1/documents/upload',data={'area':'prisma','project_id':p['id']},files={'file':('brief.txt',b'Actual brief','text/plain')}).json()
+    upload=enabled.post('/api/v1/documents/upload',data={'area':'events','project_id':p['id']},files={'file':('brief.txt',b'Actual brief','text/plain')}).json()
     ident,_=post(enabled,'Consulta este material',project_id=p['id'],item_ids=[upload['id']])
     with SessionLocal() as db:db.get(Item,upload['id']).data={};db.commit()
     calls=decisions(monkeypatch,[{'kind':'finish','summary':'Must not run'}]);step(ident)
@@ -138,7 +139,7 @@ def test_noop_keeps_version_and_verification_proves_effect_fields(enabled,monkey
 
 def test_selected_metadata_alone_does_not_credit_project_read(enabled,monkeypatch):
     p=project(enabled)
-    decisions(monkeypatch,[tool('items.create',{**create_args(),'area':'prisma','project_id':p['id']}),{'kind':'finish','summary':'Es necesaria la lectura.','outcome':'partial'}])
+    decisions(monkeypatch,[tool('items.create',{**create_args(),'area':'events','project_id':p['id']}),{'kind':'finish','summary':'Es necesaria la lectura.','outcome':'partial'}])
     ident,_=post(enabled,'Crea una tarea en este proyecto',project_id=p['id']);run(ident)
     assert state(ident)['observations'][0]['error_code']=='target_not_read'
     assert not state(ident)['artifacts']
@@ -146,7 +147,7 @@ def test_selected_metadata_alone_does_not_credit_project_read(enabled,monkeypatc
 
 def test_verified_project_result_is_inherited_for_exact_followup(enabled,monkeypatch):
     p=project(enabled)
-    decisions(monkeypatch,[tool('resources.read',{'ids':[p['id']]}),tool('items.create',{**create_args(),'area':'prisma','project_id':p['id'],'kind':'note'}),lambda e:tool('artifact.verify',{'artifact_id':e['artifacts'][0]['id']}),{'kind':'finish','summary':'Nota guardada.'}])
+    decisions(monkeypatch,[tool('resources.read',{'ids':[p['id']]}),tool('items.create',{**create_args(),'area':'events','project_id':p['id'],'kind':'note'}),lambda e:tool('artifact.verify',{'artifact_id':e['artifacts'][0]['id']}),{'kind':'finish','summary':'Nota guardada.'}])
     first,_=post(enabled,'Crea una nota en este proyecto',project_id=p['id']);run(first)
     result=state(first)['artifacts'][0]['id']
     decisions(monkeypatch,[tool('resources.read',{'ids':[result]}),tool('items.update',{'id':result,'version':1,'changes':{'title':'Título corregido'}}),tool('artifact.verify',{'artifact_id':result}),{'kind':'finish','summary':'Nota actualizada y comprobada.'}])
@@ -160,8 +161,8 @@ def test_verified_project_result_is_inherited_for_exact_followup(enabled,monkeyp
 
 def test_result_based_on_unselected_material_is_not_inherited(enabled,monkeypatch):
     p=project(enabled)
-    uploaded=enabled.post('/api/v1/documents/upload',data={'area':'prisma','project_id':p['id']},files={'file':('private.txt',b'Private material','text/plain')}).json()
-    decisions(monkeypatch,[tool('resources.read',{'ids':[p['id'],uploaded['id']]}),tool('items.create',{**create_args(),'area':'prisma','project_id':p['id']}),lambda e:tool('artifact.verify',{'artifact_id':e['artifacts'][0]['id']}),{'kind':'finish','summary':'Derivado privado guardado.'}])
+    uploaded=enabled.post('/api/v1/documents/upload',data={'area':'events','project_id':p['id']},files={'file':('private.txt',b'Private material','text/plain')}).json()
+    decisions(monkeypatch,[tool('resources.read',{'ids':[p['id'],uploaded['id']]}),tool('items.create',{**create_args(),'area':'events','project_id':p['id']}),lambda e:tool('artifact.verify',{'artifact_id':e['artifacts'][0]['id']}),{'kind':'finish','summary':'Derivado privado guardado.'}])
     first,_=post(enabled,'Crea una nota en este proyecto',project_id=p['id'],item_ids=[uploaded['id']]);run(first)
     artifact=state(first)['artifacts'][0]['id']
     followup,_=post(enabled,'Consulta solo la ficha del proyecto',project_id=p['id'])
@@ -193,33 +194,10 @@ def test_archived_copy_cannot_bypass_revoked_lineage(enabled):
     assert enabled.get('/api/v1/items/'+ident).status_code==404
 
 
-def test_conversation_organizer_receipt_is_acceptance_then_live_verified_download(enabled,monkeypatch):
-    from app.printing_generation import process_generation_jobs
-    decisions(monkeypatch,[tool('printing.organizer.create',{'parameters':{'columns':2,'rows':3},'operation_key':'organizer'}),{'kind':'finish','summary':'He aceptado el encargo; consulta la generación.'}])
-    ident,_=post(enabled,'Crea un organizador de dos columnas y tres filas con valores por defecto',area='printing');run(ident)
-    e=state(ident);assert e['state']=='partially_completed' and not e['artifacts']
-    queued=e['queued_jobs'][0];assert queued['state']=='queued' and not queued['download_url']
-    process_generation_jobs()
-    job=enabled.get('/api/v1/agents/runs/'+ident).json()
-    result=job['execution']['queued_jobs'][0]
-    assert result['state']=='verified' and result['evidence']['watertight']
-    assert len(enabled.get(result['download_url']).content)>84
 
 
-def test_conversation_cancellation_cancels_pending_organizer(enabled,monkeypatch):
-    decisions(monkeypatch,[tool('printing.organizer.create',{'parameters':{},'operation_key':'organizer'})])
-    ident,_=post(enabled,'Crea un organizador con valores por defecto',area='printing');run(ident,2)
-    queued=state(ident)['queued_jobs'][0]['id']
-    assert enabled.post('/api/v1/agents/runs/'+ident+'/cancel').status_code==200
-    assert enabled.get('/api/v1/printing/generation/jobs/'+queued).json()['state']=='cancelled'
 
 
-def test_organizer_requires_human_request_and_dimensions(enabled,monkeypatch):
-    decisions(monkeypatch,[tool('printing.organizer.create',{'parameters':{},'operation_key':'organizer'}),{'kind':'ask','question':'¿Qué medidas quieres o autorizas valores por defecto?'}])
-    ident,_=post(enabled,'Crea un organizador',area='printing');run(ident)
-    assert state(ident)['state']=='waiting_information'
-    assert state(ident)['observations'][0]['error_code']=='missing_dimensions'
-    assert not state(ident).get('queued_jobs')
 
 
 def test_effect_and_acceptance_receipt_share_real_sqlite_transaction(enabled,monkeypatch):
@@ -247,15 +225,3 @@ def test_real_usage_replaces_provisional_report_for_same_decision(enabled,monkey
     usage=state(ident)['usage']
     assert len(usage['calls'])==1 and usage['calls'][0]['total_tokens']==5
     assert usage['calls'][0]['reported_by']=='gateway' and usage['cost'] is None
-
-
-def test_generic_document_download_cannot_bypass_stl_verification(enabled):
-    from app.printing_generation import process_generation_jobs
-    accepted=enabled.post('/api/v1/printing/generation/jobs',json={'parameters':{},'idempotency_key':str(uuid4())})
-    assert accepted.status_code==202
-    ident=accepted.json()['id'];path='/api/v1/documents/'+ident+'/download'
-    assert enabled.get(path).status_code==409
-    process_generation_jobs()
-    assert enabled.get(path).status_code==200
-    with SessionLocal() as db:db.get(Item,ident).blob=b'corrupted';db.commit()
-    assert enabled.get(path).status_code==409

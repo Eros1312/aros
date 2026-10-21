@@ -52,8 +52,8 @@ def dashboard(db,user):
         if tasks: summaries.append({'id':area+'-tasks','title':counted(len(tasks),'tarea pendiente','tareas pendientes'),'subtitle':tasks[0].title,'symbol':'list.bullet.clipboard'})
         if documents: summaries.append({'id':area+'-docs','title':counted(len(documents),'documento','documentos'),'subtitle':documents[0].title,'symbol':'doc.text'})
         others=[i for i in group if i.kind not in ['task','reminder','event','document']]
-        summaries.extend({'id':i.id,'title':i.title,'subtitle':i.description[:90] or i.status,'symbol':'cube' if i.kind=='model' else 'sparkles' if i.kind=='news' else 'tray'} for i in others[:3-len(summaries)])
-        if area in ['technology','printing','personal']:
+        summaries.extend({'id':i.id,'title':i.title,'subtitle':i.description[:90] or i.status,'symbol':'sparkles' if i.kind=='news' else 'tray'} for i in others[:3-len(summaries)])
+        if area in ['technology','resources','personal']:
             summaries=[]
             def row(key,title,subtitle,symbol):
                 summaries.append({'id':area+'-'+key,'title':title,'subtitle':subtitle,'symbol':symbol})
@@ -61,13 +61,14 @@ def dashboard(db,user):
                 news=[i for i in group if i.kind=='news']
                 projects=[i for i in group if i.kind=='project']
                 if news: row('news',counted(len(news),'novedad','novedades'),'Ejemplos' if all(i.is_demo for i in news) else 'Tu selección de noticias','sparkles')
-                if projects: row('projects',counted(len(projects),'proyecto','proyectos'),'Ideas y herramientas','square.stack.3d.up')
+                if projects: row('projects',counted(len(projects),'proyecto','proyectos'),'Ideas y herramientas','folder')
                 if tasks: row('tasks',f'{len(tasks)} pendientes','Tu siguiente paso','checklist')
-            elif area=='printing':
-                models=[i for i in group if i.kind=='model']; materials=[i for i in group if i.kind=='material']; projects=[i for i in group if i.kind=='project']
-                if models: row('models',counted(len(models),'modelo','modelos'),counted(sum(bool(i.data.get("favorite")) for i in models),"favorito","favoritos"),'cube')
-                if materials: row('materials','Materiales',' · '.join(i.title for i in materials[:3]),'shippingbox')
-                if projects: row('projects',counted(len(projects),'proyecto','proyectos'),'Tu cola de impresión','square.stack.3d.up')
+            elif area=='resources':
+                notes=[i for i in group if i.kind=='note']; links=[i for i in group if i.kind=='link']; projects=[i for i in group if i.kind=='project']
+                if documents: row('documents',counted(len(documents),'documento','documentos'),'Tu biblioteca de documentos','doc.text')
+                if notes: row('notes',counted(len(notes),'nota','notas'),'Ideas y referencias','note.text')
+                if links: row('links',counted(len(links),'enlace','enlaces'),'Referencias guardadas','link')
+                if projects: row('projects',counted(len(projects),'proyecto','proyectos'),'Organiza tus recursos','folder')
             else:
                 orders=[i for i in group if i.kind=='order' and i.status not in ['done','delivered']]; expenses=[i for i in group if i.kind=='expense' and i.status!='done']
                 if orders: row('orders',counted(len(orders),'pedido en curso','pedidos en curso'),' · '.join(dict.fromkeys(i.data.get('store') or 'Sin tienda' for i in orders)),'shippingbox')
@@ -92,7 +93,7 @@ def dashboard(db,user):
             if instant.tzinfo:successes.append(instant.astimezone(timezone.utc))
         except (ValueError,TypeError):pass
     synced=max(successes).isoformat() if successes else None
-    return {'city':'Valencia' if settings.demo_mode else city,'temperature':'24 °C' if settings.demo_mode else temperature,'weather':'Ejemplo' if settings.demo_mode else weather_label,'summaries':rows,'attention':[{'id':i.id,'area':i.area,'title':i.title,'reason':i.reason,'resolved':False} for i in attention],'metrics':[],'syncedAt':synced,'generatedAt':now(),'demo':settings.demo_mode,'counts':{'tasks':sum(i.kind in ['task','reminder'] and i.status!='done' for i in items),'documents':sum(i.kind=='document' for i in items)},'events':[item_dict(i) for i in items if i.kind=='event' and i.due_at and i.due_at>=now()][:8]}
+    return {'city':'Ciudad de ejemplo' if settings.demo_mode else city,'temperature':'24 °C' if settings.demo_mode else temperature,'weather':'Ejemplo' if settings.demo_mode else weather_label,'summaries':rows,'attention':[{'id':i.id,'area':i.area,'title':i.title,'reason':i.reason,'resolved':False} for i in attention],'metrics':[],'syncedAt':synced,'generatedAt':now(),'demo':settings.demo_mode,'counts':{'tasks':sum(i.kind in ['task','reminder'] and i.status!='done' for i in items),'documents':sum(i.kind=='document' for i in items)},'events':[item_dict(i) for i in items if i.kind=='event' and i.due_at and i.due_at>=now()][:8]}
 
 def validate_transition(db,user,item,payload):
     internal_conversation=item.source=='agent-conversation' and item.kind in ['note','task','reminder','event','project']

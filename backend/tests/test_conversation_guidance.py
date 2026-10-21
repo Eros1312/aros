@@ -46,14 +46,14 @@ def test_safe_http_taxonomy(http_status,category):
     assert result['category']==category
     if http_status in [429,502,503,504]:assert result['retryable']
 
-@pytest.mark.parametrize('name',['items.create','items.update','printing.favorite'])
+@pytest.mark.parametrize('name',['items.create','items.update'])
 @pytest.mark.parametrize('code,http_status',[(None,429),(None,502),(None,503),('timeout',None),('read_timeout',None)])
 def test_service_failure_does_not_replay_uncertain_effect(name,code,http_status):
     result=tool_guidance(name,'error',error_code=code,http_status=http_status)
     assert not result['retryable']
     assert 'escritura' in result['stop_condition'] or 'efectos' in result['stop_condition']
 
-@pytest.mark.parametrize('name,first',[('resources.search','resources.read:'),('resources.read','resources.read:'),('items.create','artifact.verify:'),('items.update','artifact.verify:'),('printing.favorite','artifact.verify:'),('artifact.verify','finish:')])
+@pytest.mark.parametrize('name,first',[('resources.search','resources.read:'),('resources.read','resources.read:'),('items.create','artifact.verify:'),('items.update','artifact.verify:'),('artifact.verify','finish:')])
 def test_success_offers_next_relevant_step_not_entire_registry(name,first):
     result=tool_guidance(name,'success')
     assert result['category']=='success' and not result['retryable']
@@ -76,7 +76,6 @@ def test_bounding_and_untrusted_parameter_content_never_echoed():
 def test_descriptions_cover_registered_operational_tools_and_honest_limits():
     from app.conversation_engine import tool_schemas
     assert set(TOOL_DESCRIPTIONS)==set(tool_schemas())
-    assert 'NO acredita' in TOOL_DESCRIPTIONS['printing.organizer.create']
     assert 'EXCLUSIVO' in TOOL_DESCRIPTIONS['calendar.list']
     assert 'original' in TOOL_DESCRIPTIONS['resources.read']
     assert 'operation_key' in TOOL_DESCRIPTIONS['items.create']

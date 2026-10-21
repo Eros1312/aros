@@ -113,7 +113,7 @@ def google_sync(db,user,connector):
                     m=client.get('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+record['id'],params={'format':'full'}); m.raise_for_status(); email=m.json()
                     headers={h['name'].lower():h['value'] for h in email.get('payload',{}).get('headers',[])}
                     title=headers.get('subject','Sin asunto'); text=email.get('snippet','')
-                    area='university' if any(x in (title+' '+headers.get('from','')).lower() for x in ['universidad','uv.es','orgánica','prácticas']) else 'personal'
+                    area='personal'
                     count+=upsert(db,user,'gmail',record['id'],'email',area,title,text,data={'sender':headers.get('from',''),'url':'https://mail.google.com/mail/u/0/#all/'+record['id']})
                     order=extract_order(title+' '+text)
                     if order: count+=upsert(db,user,'gmail-order',record['id'],'order','personal',title,text,status=order[1],data={'store':order[0],'url':'https://mail.google.com/mail/u/0/#all/'+record['id']})
@@ -182,8 +182,8 @@ def sync_connector(db,user,key):
     if not connector: raise HTTPException(404,'Conector no encontrado')
     if connector.status=='paused': raise HTTPException(409,'Reanuda el conector antes de sincronizar')
     if connector.status=='syncing':raise HTTPException(409,'Este conector ya se está sincronizando')
-    if key in ['gmail','calendar','drive','github','notion','vercel','university'] and not connector.encrypted_tokens: raise HTTPException(409,'Autoriza este conector antes de sincronizar')
-    if key not in ['gmail','calendar','drive','rss','server','github','notion','vercel','weather','university']: raise HTTPException(409,'Esta integración está prevista y aún no está implementada')
+    if key in ['gmail','calendar','drive','github','notion','vercel'] and not connector.encrypted_tokens: raise HTTPException(409,'Autoriza este conector antes de sincronizar')
+    if key not in ['gmail','calendar','drive','rss','server','github','notion','vercel','weather']: raise HTTPException(409,'Esta integración está prevista y aún no está implementada')
     original_revision=connector.revision
     claimed=db.execute(update(Connector).where(Connector.id==key,Connector.user_id==user.id,Connector.revision==original_revision,Connector.status==connector.status).values(status='syncing',sync_started_at=now(),revision=Connector.revision+1))
     db.commit()
@@ -194,9 +194,6 @@ def sync_connector(db,user,key):
     try:
         if key in ['gmail','calendar','drive']: result=google_sync(db,user,connector)
         elif key=='rss': result=rss_sync(db,user)
-        elif key=='university':
-            from .university import university_sync
-            result=university_sync(db,user,connector)
         elif key=='weather':
             from .weather import refresh
             result=refresh(db,user,commit=False)

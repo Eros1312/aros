@@ -12,6 +12,6 @@ El código original de Aros se publica bajo AGPL-3.0-only. Las dependencias no s
 | OpenClaw | Gateway opcional, instalado por el operador | [Repositorio upstream](https://github.com/openclaw/openclaw) |
 | PostgreSQL y Caddy | Servicios opcionales de despliegue | Imágenes declaradas en `deploy/compose.yaml` |
 
-Los SVG geométricos de la interfaz forman parte del código original de este proyecto. Los documentos de prueba se generan a partir de texto y geometría sintéticos. No se distribuyen documentos universitarios, música, fotografías de terceros, fuentes comerciales ni el catálogo personal de modelos 3D.
+Los SVG geométricos de la interfaz forman parte del código original de este proyecto. Los documentos de prueba se generan a partir de texto y geometría sintéticos. Las capturas muestran datos de ejemplo de Aros. No se distribuyen documentos personales, música, fotografías de terceros, fuentes comerciales ni catálogos privados.
 
 El usuario de una instancia conserva la responsabilidad sobre los archivos que importa y los permisos de sus servicios conectados. La licencia del código no concede derechos sobre esos materiales.

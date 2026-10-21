@@ -29,7 +29,7 @@ class AutonomousIn(BaseModel):
     model_config=ConfigDict(extra='forbid',str_strip_whitespace=True)
     goal:str=Field(min_length=10,max_length=4000)
     title:str=Field(min_length=1,max_length=160)
-    area:Literal['university','prisma','technology','printing','personal','server']
+    area:Literal['learning','events','technology','resources','personal','server']
     query:str=Field(default='',max_length=160)
     item_ids:list[str]=Field(default_factory=list,max_length=20)
     authorize_internal_write:StrictBool
@@ -218,20 +218,6 @@ def tool_step(db,user,job,e,d):
             if scope['item_ids'] and not set(ids)<=set(scope['item_ids']):raise CapabilityBlocked('scope_denied','La lectura está fuera de la selección autorizada.')
             scope['item_ids']=ids;scope['query']=''
         sources=read_resources(db,user,scope)
-        if tool=='resources.read':
-            # Existing public publisher images are references, not visual input.
-            # Never fetch images or forward Moodle/connector download URLs.
-            from .printing import valid_image
-            rows={r.id:r for r in db.scalars(select(Item).options(defer(Item.blob)).where(Item.user_id==user.id,Item.id.in_([s['id'] for s in sources])))}
-            for source in sources:
-                data=rows[source['id']].data or {};pictures=[]
-                if source['area']=='printing':
-                    raw=data.get('image_urls') or [data.get('image_url')]
-                    if isinstance(raw,list):
-                        for url in raw[:3]:
-                            if isinstance(url,str) and valid_image(url):
-                                p=urlsplit(url);pictures.append(urlunsplit((p.scheme,p.netloc,p.path,'','')))
-                source['image_urls']=list(dict.fromkeys(pictures))
         current={s['id']:s for s in e['selected_sources']}
         if len(set(current)|{s['id'] for s in sources})>20:raise CapabilityBlocked('source_limit','Máximo veinte fuentes distintas por trabajo.')
         current.update({s['id']:s for s in sources});e['selected_sources']=list(current.values())

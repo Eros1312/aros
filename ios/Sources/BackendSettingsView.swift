@@ -271,13 +271,13 @@ struct AutomationsView: View {
                         if !job.error.isEmpty { Text(job.error).font(.caption).foregroundStyle(.red) }
                         ForEach(Array(job.actions.enumerated()), id: \.offset) { index, action in
                             VStack(alignment: .leading) {
-                                Text(action.type == "prisma.design" ? "Preparar diseño en Canva" : action.type == "item.create" ? "Crear recurso" : action.type == "item.update" ? "Actualizar recurso" : "Completar recurso").font(.headline)
+                                Text(action.type == "events.design" ? "Preparar diseño en Canva" : action.type == "item.create" ? "Crear recurso" : action.type == "item.update" ? "Actualizar recurso" : "Completar recurso").font(.headline)
                                 Text(action.payload.brief ?? action.payload.title ?? action.payload.id ?? "")
-                                if action.type == "prisma.design" { Text("Este diseño usa el modelo de diseño configurado por el operador. Se encola para revisión en Canva.").font(.caption).foregroundStyle(.secondary) }
+                                if action.type == "events.design" { Text("Este diseño usa el modelo de diseño configurado por el operador. Se encola para revisión en Canva.").font(.caption).foregroundStyle(.secondary) }
                                 if let detail = action.detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
-                                if action.setupRequired == true { NavigationLink(value: Destination.area(.prisma)) { Label("Configurar Canva en PRISMA", systemImage: "link") } }
+                                if action.setupRequired == true { NavigationLink(value: Destination.area(.events)) { Label("Configurar Canva en Eventos", systemImage: "link") } }
                                 if let description = action.payload.description { Text(description) }
-                                Button(action.appliedId == nil ? action.type == "prisma.design" ? "Preparar diseño en Canva" : "Aplicar esta acción" : action.type == "prisma.design" ? "Diseño en cola" : "Aplicado") { Task {
+                                Button(action.appliedId == nil ? action.type == "events.design" ? "Preparar diseño en Canva" : "Aplicar esta acción" : action.type == "events.design" ? "Diseño en cola" : "Aplicado") { Task {
                                     guard let client = store.apiClient else { return }
                                     do { let _: RemoteAppliedAction = try await client.request("/agents/runs/\(job.id)/actions/\(index)", method: "POST", body: [:]); await load() }
                                     catch { self.error = error.localizedDescription }

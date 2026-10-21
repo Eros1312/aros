@@ -31,9 +31,10 @@ WhatsApp y otros canales personales no están activados en la distribución. Añ
 ## Datos externos
 
 - **Google:** requiere una aplicación OAuth propia y consentimiento del usuario. La presencia del formulario no significa que Gmail, Drive o Calendar estén conectados.
-- **Estudio/Moodle:** el adaptador actual está limitado a Aula Virtual de la Universitat de València; no es un conector genérico para cualquier instalación Moodle. Necesita autorización compatible y conserva alcance de lectura. No ofrece permiso para entregar, borrar o modificar tareas. El importador de horarios también está especializado en el formato UV.
+- **Aprendizaje:** organiza cursos, documentos y objetivos añadidos por el usuario. No requiere una cuenta educativa ni incluye conectores de una institución concreta.
 - **Diseño/Canva:** necesita la aplicación y los permisos del operador. Para generar propuestas requiere además `OPENCLAW_DESIGN_MODEL` explícito; si está vacío, esa generación no está disponible. No se incluyen diseños privados ni aprobaciones heredadas.
-- **GitHub, noticias y modelos 3D:** las fuentes y su sincronización se habilitan explícitamente. No se distribuye el catálogo personal anterior. Cada material conserva su licencia de origen.
+- **GitHub y noticias:** las fuentes y su sincronización se habilitan explícitamente. Cada material conserva su licencia de origen.
+- **Recursos:** permite organizar documentos, notas y enlaces propios. No descarga catálogos externos automáticamente.
 - **Métricas de servidor:** describen el entorno donde corre el backend o un agente de servidor configurado por el operador.
 
 Una fuente puede cambiar, limitar peticiones o revocar acceso. La interfaz y el informe de validación deben distinguir desconectado, pendiente, fallido y comprobado. No sustituyas un fallo por datos inventados.

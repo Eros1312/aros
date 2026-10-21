@@ -27,7 +27,7 @@ def publish_daily_review(db,user,job,text,references):
     item=db.scalar(select(Item).where(Item.id==ident,Item.user_id==user.id).with_for_update().execution_options(populate_existing=True))
     if item and (item.source!='agent-review' or item.status in ['archived','cancelled','canceled','withdrawn']):return None
     if item and (item.data or {}).get('execution_id')==job.id:return receipt(item)
-    names={'aros':'Aros','university':'Universidad','prisma':'PRISMA','technology':'IA y tecnología','printing':'Impresión 3D','personal':'Personal','server':'Servidor'}
+    names={'aros':'Aros','learning':'Aprendizaje','events':'Eventos','technology':'IA y tecnología','resources':'Recursos','personal':'Personal','server':'Servidor'}
     data={'execution_id':job.id,'review_date':day,'review_agent':job.agent_id,'review_state':'draft','automatic_review':True,
           'source_references':[{'id':ref['id'],'version':ref['version'],'content_hash':ref['content_hash']} for ref in references]}
     description='Borrador automático de la revisión diaria.\n\n'+text.strip()[:12000]

@@ -19,9 +19,9 @@ from .agent_capabilities import CapabilityBlocked,revalidate_sources,digest
 from .services import attention_for_item
 from .security import audit
 
-AREAS={'university','prisma','technology','printing','personal','server'}
-KINDS={'note','task','reminder','event','project'}
-PRIVATE_CONNECTORS={'google-application','_whatsapp-control','_canva-application','_printing-discovery'}
+AREAS={'learning','events','technology','resources','personal','server'}
+KINDS={'note','task','reminder','event','project','link'}
+PRIVATE_CONNECTORS={'google-application','_whatsapp-control','_canva-application'}
 
 class StrictArgs(BaseModel):
     model_config=ConfigDict(extra='forbid',strict=True)
@@ -38,7 +38,7 @@ class CalendarArgs(StrictArgs):
     def dates(cls,value):return date.fromisoformat(value).isoformat()
 
 class CreateArgs(StrictArgs):
-    kind:Literal['note','task','reminder','event','project']
+    kind:Literal['note','task','reminder','event','project','link']
     area:Area
     title:str=Field(min_length=1,max_length=240)
     description:str=Field(default='',max_length=12000)
@@ -48,6 +48,7 @@ class CreateArgs(StrictArgs):
     end_at:str|None=Field(default=None,max_length=80)
     all_day:StrictBool=False
     project_id:str|None=Field(default=None,min_length=1,max_length=100,description='Proyecto interno del mismo área, previamente leído y solicitado como destino. No admite referencias Canva ni proyectos inferidos.')
+    url:str|None=Field(default=None,max_length=2000)
     operation_key:str=Field(min_length=1,max_length=80,pattern=r'^[A-Za-z0-9_.:-]+$')
     @field_validator('title')
     @classmethod
@@ -75,21 +76,12 @@ class UpdateArgs(StrictArgs):
     id:str=Field(min_length=1,max_length=100)
     version:int=Field(ge=1)
     changes:Changes
-class FavoriteArgs(StrictArgs):
-    id:str=Field(min_length=1,max_length=100)
-    version:int=Field(ge=1)
-    favorite:StrictBool
 
-from .printing_mesh import OrganizerParameters
-class OrganizerArgs(StrictArgs):
-    parameters:OrganizerParameters
-    operation_key:str=Field(min_length=1,max_length=80,pattern=r'^[A-Za-z0-9_.:-]+$')
 
 TOOL_SCHEMAS={'weather.current':WeatherArgs,'calendar.list':CalendarArgs,
               'platform.status':EmptyArgs,'connections.status':EmptyArgs,
-              'items.create':CreateArgs,'items.update':UpdateArgs,
-              'printing.favorite':FavoriteArgs,'printing.organizer.create':OrganizerArgs}
-WRITE_TOOLS={'items.create','items.update','printing.favorite','printing.organizer.create'}
+              'items.create':CreateArgs,'items.update':UpdateArgs}
+WRITE_TOOLS={'items.create','items.update'}
 
 def registry():
     return {name:{'parameters':schema.model_json_schema(),'writes':name in WRITE_TOOLS}
@@ -116,15 +108,11 @@ def human_intent(prompt,name):
         text=extra_pattern.sub('',text)
     suffix=r'(?:me|lo|la|los|las)?'
     verbs={'items.create':r'crea|crear|crees|guarda|guardar|guardes|anade|anadir|anadas|agrega|agregar|agregues|apunta|apuntar|apuntes|recuerda|recordar|recuerdes|programa|programar|programes|agenda|agendar|agendes|pon|poner|pongas',
-           'items.update':r'actualiza|actualizar|actualices|modifica|modificar|modifiques|cambia|cambiar|cambies|edita|editar|edites|completa|completar|completes|marca|marcar|marques|termina|terminar|termines|corrige|corregir|corrijas',
-           'printing.favorite':r'guarda|guardar|guardes|quita|quitar|quites|anade|anadir|anadas|marca|marcar|marques|pon|poner|pongas',
-           'printing.organizer.create':r'crea|crear|crees|genera|generar|generes|disena|disenar|disenes'}[name]
+           'items.update':r'actualiza|actualizar|actualices|modifica|modificar|modifiques|cambia|cambiar|cambies|edita|editar|edites|completa|completar|completes|marca|marcar|marques|termina|terminar|termines|corrige|corregir|corrijas'}[name]
     # A prohibition on modifying originals or external sending must not veto
     # an independently requested internal creation. Negations fence the tool's
     # own verb family; they never grant another family permission.
     if re.search(r'\b(no|sin)\s+(?:(?:me|lo|la|los|las)\s+)?(?:'+verbs+r')'+suffix+r'\b',text):return False
-    if name=='printing.favorite' and not re.search(r'\bfavoritos?\b',text):return False
-    if name=='printing.organizer.create' and not re.search(r'\borganizador(?:es)?\b',text):return False
     if name=='items.create' and re.search(r'\b(?:pon|poner|pongas)'+suffix+r'\b',text) and not re.search(r'\b(nota|notas|tarea|tareas|recordatorio|recordatorios|evento|eventos|proyecto|proyectos)\b',text):return False
     # A verb mentioned in a document/quotation is not an imperative request.
     start=r'(?:^|[.!?;]\s*|\by\s+)(?:(?:por favor|despues|luego|ademas|tambien|hola)[,]?\s+)*'
@@ -208,7 +196,9 @@ def create_item(db,user,args,scope,authorization):
             raise CapabilityBlocked('write_not_authorized','El mensaje no solicita vincular este resultado a un proyecto. Concreta el destino antes de añadir la relación.')
     elif scope.get('project_id'):
         raise CapabilityBlocked('scope_denied','Esta conversación pertenece a un proyecto: indica su project_id al guardar el resultado.')
-    payload=ItemIn.model_validate(args.model_dump(exclude={'operation_key','end_at','all_day','project_id'})).model_dump()
+    if args.kind=='link' and not args.url:raise CapabilityBlocked('missing_url','Un enlace necesita una dirección http o https.')
+    if args.url:metadata['url']=args.url
+    payload=ItemIn.model_validate({**args.model_dump(exclude={'operation_key','end_at','all_day','project_id','url'}),'data':metadata}).model_dump()
     payload['data']={**metadata,'origin_user_prompt':True,'execution_id':authorization['job_id'],'source_references':refs}
     if args.project_id:payload['data']['project_id']=args.project_id
     # The operation key is supplied by the planner; the job namespace fixes owner
@@ -273,37 +263,8 @@ def update_item(db,user,args,scope,authorization):
     db.expire(item);db.refresh(item);attention_for_item(db,user,item,reopen=True);audit(db,user,'conversation.item_updated',item.id)
     return observation('success','Cambio interno guardado; debe verificarse.',artifacts=[receipt(item)],data={'id':item.id,'version':item.version})
 
-def favorite(db,user,args,scope,authorization):
-    refs=write_authorized(db,user,scope,authorization,'printing.favorite');item=read_item(db,user,args.id,scope)
-    if item.id not in set(authorization.get('read_ids',[ref['id'] for ref in refs])):raise CapabilityBlocked('target_not_read','Lee el modelo actual antes de cambiar su favorito.')
-    from .printing import SOURCE
-    if item.area!='printing' or item.kind!='model' or item.source!=SOURCE:raise CapabilityBlocked('model_unavailable','El modelo no pertenece a la colección de impresión.')
-    if item.version!=args.version:raise CapabilityBlocked('version_conflict','El modelo cambió; vuelve a leerlo.')
-    if bool((item.data or {}).get('favorite',False))==args.favorite:
-        return observation('success','El favorito ya estaba en el estado solicitado; no se ha modificado.',artifacts=[{**receipt(item),'effect':'unchanged'}],data={'id':item.id,'version':item.version,'favorite':args.favorite,'changed':False})
-    changed=db.execute(update(Item).where(Item.id==item.id,Item.user_id==user.id,Item.version==args.version).values(data={**(item.data or {}),'favorite':args.favorite},version=Item.version+1,updated_at=now()))
-    if changed.rowcount!=1:raise CapabilityBlocked('version_conflict','El modelo cambió durante la operación.')
-    db.expire(item);db.refresh(item);audit(db,user,'conversation.printing_favorite',item.id)
-    return observation('success','Preferencia de favorito guardada; no se imprimió ni descargó el modelo.',artifacts=[receipt(item)],data={'id':item.id,'version':item.version,'favorite':args.favorite})
 
 
-def organizer(db,user,args,scope,authorization):
-    refs=write_authorized(db,user,scope,authorization,'printing.organizer.create')
-    if 'printing' not in allowed_areas(scope):raise CapabilityBlocked('scope_denied','El organizador pertenece al área de impresión 3D.')
-    if len(refs)>20:raise CapabilityBlocked('source_limit','La generación admite hasta veinte fuentes; concreta la selección.')
-    prompt=normalized(authorization.get('prompt',''))
-    prompt=re.sub(r'"[^"]*"|«[^»]*»|“[^”]*”|`[^`]*`','',prompt)
-    defaults=bool(re.search(r'\b(?:medidas|parametros|valores|dimensiones)\s+(?:por defecto|predeterminad\w*|estandar)',prompt))
-    dimensions=bool(re.search(r'\d+(?:[.,]\d+)?\s*(?:x|×)\s*\d+(?:[.,]\d+)?\s*(?:x|×)\s*\d+(?:[.,]\d+)?',prompt))
-    measured=all(re.search(pattern,prompt) for pattern in [r'\b(?:ancho|anchura)\b',r'\b(?:fondo|profundidad)\b',r'\b(?:alto|altura)\b',r'\bpared\w*\b',r'\bbase\b']) and bool(re.search(r'\d',prompt))
-    documented=bool(authorization.get('read_ids') and re.search(r'\b(?:medidas|dimensiones)\b.*\b(?:documento|recurso|ficha|material)\b',prompt))
-    if not defaults and not ((dimensions or measured) and (re.search(r'\bpared\w*\b',prompt) and re.search(r'\bbase\b',prompt))) and not documented:
-        raise CapabilityBlocked('missing_dimensions','Concreta ancho, fondo, altura, pared y base en mm, y filas/columnas; o autoriza expresamente los valores por defecto.')
-    if scope.get('project_id') and scope['project_id'] not in authorization.get('read_ids',[]):raise CapabilityBlocked('target_not_read','Lee la ficha del proyecto antes de aceptar el encargo.')
-    from .printing_generation import queue_generation
-    key=str(uuid5(NAMESPACE_URL,'aros-organizer:'+authorization['job_id']+':'+args.operation_key))
-    job=queue_generation(db,user,args.parameters,key,commit=False,source_references=refs,project_id=scope.get('project_id'))
-    return observation('warning','Encargo de organizador aceptado y guardado. El STL aún debe generarse y verificarse; no se ha impreso.',data={'accepted':True,'generation_job':job},next_actions=['Consulta el encargo en Impresión 3D; sólo un estado verified acredita el STL.'])
 
 def weather(db,user,args):
     row=db.scalar(select(Connector).where(Connector.id=='weather',Connector.user_id==user.id).with_for_update().execution_options(populate_existing=True))
@@ -346,8 +307,6 @@ def execute_tool(db,user,name,args,scope,authorization):
     current_owner(db,user);allowed_areas(scope)
     if name=='items.create':return create_item(db,user,parsed,scope,authorization)
     if name=='items.update':return update_item(db,user,parsed,scope,authorization)
-    if name=='printing.favorite':return favorite(db,user,parsed,scope,authorization)
-    if name=='printing.organizer.create':return organizer(db,user,parsed,scope,authorization)
     if name=='weather.current':return weather(db,user,parsed)
     if name=='platform.status':return platform(db,user)
     if name=='connections.status':return connections(db,user)

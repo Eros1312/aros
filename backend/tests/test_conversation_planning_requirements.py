@@ -3,11 +3,11 @@ import pytest
 from app.conversation_objectives import required_read_objective_tools
 
 def test_real_weather_and_selected_public_model_request():
-    prompt='Consulta el tiempo actual de Valencia, España, y busca y lee la ficha pública del catálogo 3D que está seleccionada en el alcance de esta prueba. Resume para qué sirve el modelo y qué licencia tiene.'
+    prompt='Consulta el tiempo actual de Ciudad de ejemplo, España, y busca y lee la ficha pública del catálogo de documentos que está seleccionada en el alcance de esta prueba. Resume para qué sirve el modelo y qué licencia tiene.'
     assert required_read_objective_tools(prompt)==['weather.current','resources.read']
 
 def test_three_explicit_read_objectives_and_ellipsis():
-    prompt='Consulta mi calendario de mañana y el tiempo actual de Valencia. Después busca un modelo3D de laboratorio y lee su ficha.'
+    prompt='Consulta mi calendario de mañana y el tiempo actual de Ciudad de ejemplo. Después busca un documento de laboratorio y lee su ficha.'
     assert required_read_objective_tools(prompt)==['weather.current','calendar.list','resources.read']
 
 @pytest.mark.parametrize('prompt',[
@@ -26,7 +26,7 @@ def test_explicit_weather_calendar_pairs(prompt):
     'Explica el texto: Consulta el tiempo y el calendario',
     'Consulta el tiempo',
     'Revisa la agenda',
-    'Busca y lee la ficha del modelo3D',
+    'Busca y lee la ficha del documento',
     'No consultes el calendario ni el tiempo',
     'No consulta el calendario y no muestra el tiempo',
     'Consulta el calendario y no el tiempo',

@@ -18,7 +18,7 @@ from .calendar import event_interval
 router = APIRouter(prefix='/api/v1/workspace', tags=['Workspace'])
 UserDep = Annotated[User, Depends(current_user)]
 DbDep = Annotated[object, Depends(get_db)]
-NAMES = {'university': 'Universidad', 'prisma': 'PRISMA', 'printing': 'Impresión 3D',
+NAMES = {'learning': 'Aprendizaje', 'events': 'Eventos', 'resources': 'Recursos',
          'technology': 'IA y tecnología', 'personal': 'Personal', 'server': 'Operación'}
 
 
@@ -258,10 +258,10 @@ def timestamp(value):
 
 def collection_metadata(item):
     data = item.data or {}
-    if item.area == 'university':
-        group = str(data.get('course_title') or 'Asignatura sin confirmar')[:240]
+    if item.area == 'learning':
+        group = str(data.get('course_title') or 'Tema sin clasificar')[:240]
         category = str(data.get('material_type') or data.get('category') or 'document')[:80]
-    elif item.area == 'prisma':
+    elif item.area == 'events':
         group = str(data.get('event_title') or data.get('event_name') or 'Evento sin confirmar')[:240]
         category = str(data.get('category') or 'document')[:80]
     else:
@@ -269,7 +269,7 @@ def collection_metadata(item):
         category = str(data.get('category') or item.kind)[:80]
     return {'group': group, 'category': category,
             'review_state': str(data.get('review_state') or 'unconfirmed'),
-            'original': bool(data.get('sha256')) and item.source in ['prisma-file', 'university-browser'],
+            'original': bool(data.get('sha256')) and item.source in ['events-file', 'upload'],
             'indexed': bool(data.get('indexed') or data.get('extracted')),
             'partial': bool(data.get('partial'))}
 
@@ -323,7 +323,7 @@ def summary(user: UserDep, db: DbDep):
                                                         Connector.id.notlike(r'\_%', escape='\\'))))
     coverage = [{'id': c.id, 'name': c.name, 'status': c.status,
                  'last_successful_sync_at': c.last_sync, 'error': c.error}
-                for c in connectors if c.id in ['university', 'university-calendar', 'gmail', 'calendar', 'canva', 'weather', 'rss']]
+                for c in connectors if c.id in ['gmail', 'calendar', 'canva', 'weather', 'rss']]
     return {'generated_at': clock.isoformat(), 'timezone': 'Europe/Madrid',
             'priorities': priorities, 'projects': projects, 'results': results,
             'events': [item_dict(i) for _, i in upcoming[:6]], 'coverage': coverage,

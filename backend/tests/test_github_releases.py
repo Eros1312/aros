@@ -6,7 +6,7 @@ from sqlalchemy import select
 from app import github_releases as radar
 from app.connectors import upsert
 from app.database import Item,Inbox,Connector
-from test_printing_generation import db,user
+from db_fixtures import db,user
 
 
 def release(repo,ident=1):

@@ -25,9 +25,9 @@ Un trabajo conserva su estado y progreso en la base. La aceptación de una petic
 - **Demo local:** datos de ejemplo, SQLite, acceso de demostración y respuestas locales limitadas. No activa proveedores ni sincroniza cuentas.
 - **Instancia configurada:** autenticación propia, secretos del operador, proveedores y conectores autorizados expresamente. Las funciones disponibles dependen de esa configuración.
 
-## Áreas heredadas
+## Espacios de trabajo
 
-Estudio, diseño y 3D conservan código especializado de la aplicación original. Identificadores técnicos como `prisma` y `uv` pueden aparecer en rutas y modelos para conservar contratos internos; no significan que existan cuentas o documentos de esas organizaciones dentro de la distribución. El plan de trabajo incluye hacer estas áreas más configurables.
+Aprendizaje (`learning`), Eventos (`events`) y Recursos (`resources`) utilizan el mismo modelo de recursos, tareas, documentos, proyectos y calendario. Aprendizaje permite organizar cursos y objetivos propios; Eventos reúne planes y materiales; Recursos guarda archivos, notas y enlaces. La instalación no depende de una institución, una marca ni un catálogo externo. Las integraciones creativas de Eventos son opcionales y requieren configuración del operador.
 
 ## Persistencia y recuperación
 

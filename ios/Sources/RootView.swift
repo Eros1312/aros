@@ -9,8 +9,8 @@ struct RootView: View {
             Group {
                 switch store.selectedTab {
                 case .today: HomeView()
-                case .university: areaView(.university)
-                case .prisma: areaView(.prisma)
+                case .learning: areaView(.learning)
+                case .events: areaView(.events)
                 case .ideas: IdeasView()
                 case .server: areaView(.server)
                 }
@@ -24,7 +24,7 @@ struct RootView: View {
                 case .settings: BackendSettingsView()
                 case .workspace: ResourceListView(area: nil)
                 case .calendar: if store.connected { RemoteCalendarView() } else { ResourceListView(area: nil, kinds: ["event"], title: "Calendario") }
-                case .files: ResourceListView(area: nil, kinds: ["document", "model"], title: "Archivos")
+                case .files: ResourceListView(area: nil, kinds: ["document"], title: "Archivos")
                 case .connections: ConnectionsView()
                 case .automations: AutomationsView()
                 case .resource(let id): ResourceDetailView(id: id)
@@ -59,8 +59,8 @@ struct RootView: View {
     @ViewBuilder private func areaView(_ area: Area) -> some View {
         if store.connected {
             if area == .server { RemoteServerView() }
-            else if area == .printing { PrintingDiscoveryView() }
-            else if area == .prisma { PrismaStudioView() }
+            else if area == .resources { ResourceListView(area: .resources) }
+            else if area == .events { EventsStudioView() }
             else if area == .technology { TechnologyStudioView() }
             else { ResourceListView(area: area) }
         } else { AreaDetailView(area: area) }

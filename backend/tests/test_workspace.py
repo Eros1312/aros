@@ -14,10 +14,10 @@ def test_workspace_requires_auth(client):
 def test_priorities_do_not_count_imported_documents_and_preserve_sync_time(auth):
     with SessionLocal() as db:
         user=db.query(User).first()
-        task=Item(user_id=user.id,kind='task',area='prisma',title='Pendiente real',status='pending',priority='urgent')
-        doc=Item(user_id=user.id,kind='document',area='university',source='university-browser',title='Tema importado',status='active')
+        task=Item(user_id=user.id,kind='task',area='events',title='Pendiente real',status='pending',priority='urgent')
+        doc=Item(user_id=user.id,kind='document',area='learning',source='upload',title='Tema importado',status='active')
         db.add_all([task,doc]);db.flush()
-        db.add(Inbox(user_id=user.id,item_id=doc.id,title=doc.title,reason='Documento importado',area='university'))
+        db.add(Inbox(user_id=user.id,item_id=doc.id,title=doc.title,reason='Documento importado',area='learning'))
         weather=db.get(Connector,('weather',user.id));weather.last_sync='2025-01-02T12:00:00+00:00';db.commit()
         task_id=task.id;doc_id=doc.id
     a=auth.get('/api/v1/workspace/summary').json()
@@ -33,12 +33,12 @@ def test_library_search_before_pagination_and_owner_scope(auth):
     with SessionLocal() as db:
         user=db.query(User).first()
         other=User(email='outside@local',password_hash=hash_password('long-enough-outside'));db.add(other);db.flush()
-        foreign=Item(user_id=other.id,kind='document',area='university',title='Ácido oculto',status='active')
-        found=Item(user_id=user.id,kind='document',area='university',title='Equilibrio ácido',description='Una fórmula de muestra y otra referencia',status='active',source='university-browser',data={'course_title':'Química analítica','sha256':'example','partial':True})
+        foreign=Item(user_id=other.id,kind='document',area='learning',title='Ácido oculto',status='active')
+        found=Item(user_id=user.id,kind='document',area='learning',title='Equilibrio ácido',description='Una fórmula de muestra y otra referencia',status='active',source='upload',data={'course_title':'Gestión analítica','sha256':'example','partial':True})
         db.add_all([foreign,found]);db.commit();wanted=found.id;secret=foreign.id
     data=auth.get('/api/v1/workspace/library?q=acido&limit=1').json()
     assert data['pagination']['total']==1 and data['items'][0]['id']==wanted
-    assert data['items'][0]['library']['group']=='Química analítica'
+    assert data['items'][0]['library']['group']=='Gestión analítica'
     assert data['items'][0]['library']['partial'] and data['items'][0]['library']['original']
     assert secret not in [i['id'] for i in auth.get('/api/v1/workspace/library').json()['items']]
     assert auth.get('/api/v1/workspace/library?limit=101').status_code==422
@@ -48,10 +48,10 @@ def test_library_search_before_pagination_and_owner_scope(auth):
 def test_approved_filter_requires_explicit_metadata(auth):
     with SessionLocal() as db:
         user=db.query(User).first()
-        final=Item(user_id=user.id,kind='document',area='prisma',title='final_definitivo.pdf',status='active',source='prisma-file',data={'review_state':'original'})
-        approved=Item(user_id=user.id,kind='document',area='prisma',title='versión revisada.pdf',status='active',source='prisma-file',data={'review_state':'approved'})
+        final=Item(user_id=user.id,kind='document',area='events',title='final_definitivo.pdf',status='active',source='events-file',data={'review_state':'original'})
+        approved=Item(user_id=user.id,kind='document',area='events',title='versión revisada.pdf',status='active',source='events-file',data={'review_state':'approved'})
         db.add_all([final,approved]);db.commit();wanted=approved.id
-    data=auth.get('/api/v1/workspace/library?area=prisma&approved=true').json()
+    data=auth.get('/api/v1/workspace/library?area=events&approved=true').json()
     assert [i['id'] for i in data['items']]==[wanted]
 
 
@@ -59,7 +59,7 @@ def test_revoked_source_and_transitive_derivatives_unavailable_but_local_origina
     with SessionLocal() as db:
         user=db.query(User).first();conn=db.get(Connector,('gmail',user.id));conn.status='connected'
         mail=Item(user_id=user.id,kind='document',area='personal',source='gmail',title='Privado revocable',description='Email body',status='active')
-        local=Item(user_id=user.id,kind='document',area='university',source='university-browser',title='Original autorizado',status='active',blob=b'original')
+        local=Item(user_id=user.id,kind='document',area='learning',source='upload',title='Original autorizado',status='active',blob=b'original')
         db.add_all([mail,local]);db.flush()
         notice=Inbox(user_id=user.id,item_id=mail.id,title=mail.title,reason='Mail imported',area='personal')
         db.add(notice);db.flush();notice_id=notice.id
@@ -95,9 +95,9 @@ def test_revoked_excerpt_not_reused_as_chat_history(auth):
 def test_content_hash_invalidates_derivative_even_without_version_bump(auth):
     with SessionLocal() as db:
         user=db.query(User).first()
-        original=Item(user_id=user.id,kind='document',area='prisma',source='prisma-file',title='Original',description='First content',status='active')
+        original=Item(user_id=user.id,kind='document',area='events',source='events-file',title='Original',description='First content',status='active')
         db.add(original);db.flush()
-        derived=Item(user_id=user.id,kind='note',area='prisma',source='agent-execution',title='Extract',description='First content',status='active',data={'source_references':[{'id':original.id,'version':original.version,'content_hash':resource_fingerprint(original)}]})
+        derived=Item(user_id=user.id,kind='note',area='events',source='agent-execution',title='Extract',description='First content',status='active',data={'source_references':[{'id':original.id,'version':original.version,'content_hash':resource_fingerprint(original)}]})
         db.add(derived);db.commit();ident=derived.id
     assert auth.get('/api/v1/items/'+ident).status_code==200
     with SessionLocal() as db:

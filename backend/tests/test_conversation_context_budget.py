@@ -19,7 +19,7 @@ def base_context():
         'continued_human_request': 'Crea un recordatorio interno. Respuesta actual: mañana a las 18:00.',
         'authorize_internal_write': True,
         'authorization': {'user_id': 'owner', 'request_hash': 'original-human-request'},
-        'scope': {'areas': ['university', 'personal'], 'item_ids': []},
+        'scope': {'areas': ['learning', 'personal'], 'item_ids': []},
         'now': '2026-10-02T16:00:00+02:00',
         'tools': {'resources.read': {'properties': {'ids': {'type': 'array'}}},
                   'calendar.list': {'properties': {'start': {'type': 'string'}}}},
@@ -27,7 +27,7 @@ def base_context():
         'objectives': [{'id': 'agenda', 'text': 'Consultar las clases de mañana'},
                        {'id': 'reminder', 'text': 'Crear el recordatorio interno solicitado'}],
         'artifacts': [{'id': 'created-reminder', 'version': 2, 'verified': True,
-                       'operation': 'create', 'title': 'Repasar química', 'content_hash': 'verified-current-hash'}],
+                       'operation': 'create', 'title': 'Repasar gestión', 'content_hash': 'verified-current-hash'}],
         'available_history_resources': [{'id': 'created-reminder', 'version': 2, 'source': 'agent-conversation'}],
         'read_resources': [], 'read_coverage': [], 'search_results': [], 'observations': [],
     }

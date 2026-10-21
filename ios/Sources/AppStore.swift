@@ -92,9 +92,9 @@ final class AppStore {
             return
         }
         let key = prompt.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "es_ES"))
-        let area: Area? = key.contains("prisma") ? .prisma : key.contains("servidor") ? .server :
-            (key.contains("clase") || key.contains("universidad") || key.contains("organica")) ? .university :
-            key.contains("pedido") ? .personal : key.contains("3d") ? .printing : nil
+        let area: Area? = key.contains("evento") ? .events : key.contains("servidor") ? .server :
+            (key.contains("clase") || key.contains("aprendizaje") || key.contains("curso")) ? .learning :
+            key.contains("pedido") ? .personal : key.contains("recurso") ? .resources : nil
         if let area, let summary = dashboard.summary(for: area) {
             let parts = [summary.headline, summary.detail, summary.footnote].compactMap { $0 }
             let rows = summary.rows.map { "\($0.title): \($0.subtitle)" }
@@ -103,7 +103,7 @@ final class AppStore {
             let tasks = dashboard.unresolved.map { "• \($0.title). \($0.reason)" }.joined(separator: "\n")
             messages.append(ChatMessage(isUser: false,
                 text: "Tu día de ejemplo\n\n" + (tasks.isEmpty ? "Todo al día. Has resuelto los asuntos de atención." : tasks) + "\n\nEsta respuesta usa datos de demostración. El asistente aún no está conectado a una IA.",
-                sources: [.university, .prisma, .personal]))
+                sources: [.learning, .events, .personal]))
         }
     }
 }

@@ -90,35 +90,35 @@ def test_inference_identity_is_fresh_and_history_is_owner_thread_scoped(enabled,
         def __iter__(self):yield sse('{"reply":"Conversación","source_ids":[]}');yield b'data: [DONE]\n\n'
     install(monkeypatch,lambda payload:Stream(),captured)
     for thread in ['main','main',str(uuid4())]:
-        assert enabled.post('/api/v1/agents/runs',json={'agent_id':'university','thread_id':thread,'text':'Continúa'}).status_code==202
+        assert enabled.post('/api/v1/agents/runs',json={'agent_id':'learning','thread_id':thread,'text':'Continúa'}).status_code==202
         bridge.process_jobs()
     assert len({payload['user'] for payload in captured[:3]})==3
     assert captured[1]['messages'][2]['content']=='Conversación'
     assert len(captured[1]['messages'])==4 and len(captured[2]['messages'])==2
     with SessionLocal() as db:
         other=User(email='isolated@example.test',password_hash='unused',ai_consent=True);db.add(other);db.flush()
-        db.add(AgentJob(user_id=other.id,agent_id='university',thread_id='main',model=other.ai_model,prompt='Otro usuario'));db.commit()
+        db.add(AgentJob(user_id=other.id,agent_id='learning',thread_id='main',model=other.ai_model,prompt='Otro usuario'));db.commit()
     bridge.process_jobs()
     assert captured[3]['user'] not in [payload['user'] for payload in captured[:3]]
     assert json.loads(captured[3]['messages'][-1]['content'])['sources']==[]
-    assert 'Moodle' in captured[0]['messages'][0]['content']
+    assert 'Aprendizaje' in captured[0]['messages'][0]['content']
 
 def test_reply_parser_handles_envelope_without_inventing_citations():
-    row=SimpleNamespace(id='one',title='Documento',area='university',kind='document')
+    row=SimpleNamespace(id='one',title='Documento',area='learning',kind='document')
     reply,sources,actions=decode_reply('Resultado: {"reply":"Sí","source_ids":["one","missing","one"]} fin',[row])
     assert reply=='Sí' and len(sources)==1 and actions==[]
     assert reply_fragment('{"reply":"Primera\\nsegunda')=='Primera\nsegunda'
     assert reply_fragment('{"reply":"Code \\u00')=='Code '
 
 def test_reviews_require_consent_and_are_bounded_pauseable_and_area_scoped(auth,enabled):
-    assert auth.patch('/api/v1/agents/schedules/university',json={'enabled':True,'interval_minutes':1}).status_code==422
-    plan=auth.patch('/api/v1/agents/schedules/university',json={'enabled':True,'interval_minutes':720}).json()
+    assert auth.patch('/api/v1/agents/schedules/learning',json={'enabled':True,'interval_minutes':1}).status_code==422
+    plan=auth.patch('/api/v1/agents/schedules/learning',json={'enabled':True,'interval_minutes':720}).json()
     assert enqueue_due_reviews()==1 and enqueue_due_reviews()==0
     with SessionLocal() as db:
         jobs=list(db.scalars(select(AgentJob).where(AgentJob.thread_id==plan['thread_id'])))
-        assert len(jobs)==1 and jobs[0].agent_id=='university' and jobs[0].actions==[]
-        assert 'lectura y descarga' in jobs[0].prompt
-    assert auth.patch('/api/v1/agents/schedules/university',json={'enabled':False,'interval_minutes':720}).status_code==200
+        assert len(jobs)==1 and jobs[0].agent_id=='learning' and jobs[0].actions==[]
+        assert 'lecturas, notas' in jobs[0].prompt
+    assert auth.patch('/api/v1/agents/schedules/learning',json={'enabled':False,'interval_minutes':720}).status_code==200
     assert enqueue_due_reviews()==0
 
 def test_reviews_never_send_data_after_consent_revocation(enabled,monkeypatch):

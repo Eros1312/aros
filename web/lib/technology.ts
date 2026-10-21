@@ -13,7 +13,7 @@ export function technologySource(item:Item):{label:string;host:string|null} {
 }
 export function technologyMotif(item:Item):TechMotif {
  if(/(github|release|code|coding|kernel|training|gradio|pytorch)/i.test(item.title+' '+(technologyURL(item)||'')))return 'code';
- if(/(robot|vision|image|multimodal|3d|embedding|earth)/i.test(item.title))return 'network';
+ if(/(robot|vision|image|multimodal|embedding|earth)/i.test(item.title))return 'network';
  return 'intelligence';
 }
 export function technologyOrder(items:Item[]):Item[]{

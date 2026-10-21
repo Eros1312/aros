@@ -36,8 +36,6 @@
 .optional-feature>summary>span {color:var(--workflow-muted);font-size:12px;font-weight:400}
 .optional-feature>summary::-webkit-details-marker {display:none}
 .optional-feature .setting-panel {max-width:100%;box-shadow:none;margin-bottom:18px}
-.university-sources {margin:12px 0 18px}
-.university-sources .status-note {margin:8px 0 16px}
 .assistant-context {display:grid;grid-template-columns:1fr auto;gap:0 8px;border:1px solid #dce4f4;border-radius:16px;background:#f1f5ff;padding:10px 12px;margin-bottom:10px;min-width:0}
 .context-resource {display:flex;align-items:center;gap:10px;text-align:left;min-height:44px;min-width:0}
 .context-resource>span {flex:1;min-width:0}
@@ -135,7 +133,7 @@ body{background:#fafbfe}
 .conversation-print-jobs p{font-size:13px;line-height:1.5;margin:8px 0}
 .conversation-print-jobs a{display:inline-flex;align-items:center;gap:7px;min-height:44px;text-decoration:none;margin-bottom:5px}
 .print-header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-#printing-organizer{scroll-margin-top:82px;outline-offset:5px}
+#resources-organizer{scroll-margin-top:82px;outline-offset:5px}
 @media(max-width:700px){
  .reference-home h1{font-size:21px}.reference-home h1>strong{font-size:42px}
  .ref-header-actions{padding-top:20px}.ref-date{font-size:13px}

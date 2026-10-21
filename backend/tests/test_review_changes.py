@@ -41,7 +41,7 @@ def test_other_owner_and_other_area_do_not_wake_review(enabled):
     with SessionLocal() as db:
         u=owner(db);at=datetime.now(timezone.utc);before=review_fingerprint(db,u,'personal',at)
         other=User(email='other-review@example.test',password_hash='unused');db.add(other);db.flush()
-        db.add_all([Item(user_id=other.id,kind='task',area='personal',title='Other owner'),Item(user_id=u.id,kind='task',area='prisma',title='Other area')]);db.commit()
+        db.add_all([Item(user_id=other.id,kind='task',area='personal',title='Other owner'),Item(user_id=u.id,kind='task',area='events',title='Other area')]);db.commit()
         assert review_fingerprint(db,u,'personal',at)==before
         db.get(Connector,('gmail',u.id)).status='connected';db.commit()
         assert review_fingerprint(db,u,'personal',at)!=before

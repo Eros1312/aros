@@ -95,9 +95,9 @@ def test_shared_server_mutations_require_admin_even_with_confirmation(auth,monke
     assert calls==[('service.restart','example')]
 
 def test_upload_download_search_and_validation(auth):
-    r=auth.post('/api/v1/documents/upload',data={'area':'university'},files={'file':('química.txt','Guion de química y análisis'.encode(),'text/plain')});assert r.status_code==201,r.text
-    id=r.json()['id'];assert auth.get('/api/v1/documents/'+id+'/download').content=='Guion de química y análisis'.encode()
-    assert any(i['id']==id for i in auth.get('/api/v1/items?q=quimica').json())
+    r=auth.post('/api/v1/documents/upload',data={'area':'learning'},files={'file':('gestión.txt','Guion de gestión y análisis'.encode(),'text/plain')});assert r.status_code==201,r.text
+    id=r.json()['id'];assert auth.get('/api/v1/documents/'+id+'/download').content=='Guion de gestión y análisis'.encode()
+    assert any(i['id']==id for i in auth.get('/api/v1/items?q=gestion').json())
     assert auth.post('/api/v1/documents/upload',files={'file':('bad.exe',b'data')}).status_code==422
     assert auth.post('/api/v1/documents/upload',files={'file':('bad.pdf',b'not pdf')}).status_code==422
     assert auth.post('/api/v1/items',json={**task(),'title':'   '}).status_code==422
@@ -110,8 +110,8 @@ def test_inbox_chat_export(auth):
     until=(datetime.now(timezone.utc)+timedelta(hours=24)).isoformat()
     assert auth.patch('/api/v1/inbox/'+id,json={'state':'snoozed','snoozed_until':until}).status_code==200
     assert id not in [i['id'] for i in auth.get('/api/v1/dashboard').json()['attention']]
-    r=auth.post('/api/v1/chat',json={'text':'¿Qué me falta de PRISMA?'}).json()
-    assert r['mode']=='local' and r['sources'] and all(s['area']=='prisma' for s in r['sources'])
+    r=auth.post('/api/v1/chat',json={'text':'¿Qué me falta de Eventos?'}).json()
+    assert r['mode']=='local' and r['sources'] and all(s['area']=='events' for s in r['sources'])
     assert len(auth.get('/api/v1/chat').json())==2
     exported=auth.get('/api/v1/export');assert exported.status_code==200
     assert 'password_hash' not in exported.text and 'encrypted_tokens' not in exported.text
@@ -126,7 +126,7 @@ def test_worker_once(auth):
     assert len(r)==1 and r[0]['status']=='completed'
 
 def test_connectors_honest_states(auth):
-    for key in ['gmail','university','notion']:assert auth.post('/api/v1/connectors/'+key+'/sync').status_code==409
+    for key in ['gmail','drive','notion']:assert auth.post('/api/v1/connectors/'+key+'/sync').status_code==409
     assert auth.get('/api/v1/server').json()['scope']=='Equipo que ejecuta el backend'
     assert 'encrypted_tokens' not in auth.get('/api/v1/connectors').text
     assert extract_order('Pedido Amazon enviado')==('Amazon','in_transit')
@@ -185,7 +185,7 @@ def test_oauth_pkce_encryption_and_one_time_state(auth,monkeypatch):
     assert 'private-access' not in auth.get('/api/v1/connectors').text
 
 def test_pending_chat_only_returns_pending_work(auth):
-    answer=auth.post('/api/v1/chat',json={'text':'¿Qué me falta de PRISMA?'}).json()
+    answer=auth.post('/api/v1/chat',json={'text':'¿Qué me falta de Eventos?'}).json()
     assert answer['sources'] and all(s['kind'] in ['task','reminder','event'] for s in answer['sources'])
     assert '2026-' not in answer['text']
 
@@ -243,7 +243,7 @@ def test_followup_context_refreshes_owned_sources(auth):
         user=db.scalar(select(User).where(User.email=='aros@local'))
         other=User(email='private@local',password_hash=hash_password('other-password'))
         db.add(other);db.flush()
-        original=Item(user_id=user.id,kind='task',area='university',title='Entrega anterior',description='Texto actualizado')
+        original=Item(user_id=user.id,kind='task',area='learning',title='Entrega anterior',description='Texto actualizado')
         removed=Item(user_id=user.id,kind='task',area='personal',title='Archivada',status='archived')
         secret=Item(user_id=other.id,kind='note',area='personal',title='Dato privado')
         db.add_all([original,removed,secret]);db.flush()
@@ -300,7 +300,7 @@ def test_calendar_conflicts_free_slots_and_ownership(auth):
         other=User(email='calendar-private@local',password_hash=hash_password('other-password'))
         db.add(other);db.flush()
         for title,start,end in [('Clase','09:00','11:00'),('Reunión','10:00','12:00'),('Estudio','12:00','13:00')]:
-            db.add(Item(user_id=user.id,kind='event',area='university',title=title,due_at=f'2026-12-01T{start}:00+00:00',data={'end_at':f'2026-12-01T{end}:00+00:00'}))
+            db.add(Item(user_id=user.id,kind='event',area='learning',title=title,due_at=f'2026-12-01T{start}:00+00:00',data={'end_at':f'2026-12-01T{end}:00+00:00'}))
         db.add(Item(user_id=other.id,kind='event',area='personal',title='Privado',due_at='2026-12-01T07:00:00+00:00',data={'end_at':'2026-12-01T23:00:00+00:00'}))
         db.add(Item(user_id=user.id,kind='event',area='personal',title='Cancelado',status='cancelled',due_at='2026-12-01T07:00:00+00:00',data={'end_at':'2026-12-01T23:00:00+00:00'}))
         db.commit()
@@ -352,7 +352,7 @@ def test_model_selector_consent_and_queued_model_snapshot(auth,monkeypatch):
     assert auth.patch('/api/v1/ai/preferences',json={'model':selected}).status_code==409
     auth.patch('/api/v1/me',json={'ai_consent':True})
     assert auth.patch('/api/v1/ai/preferences',json={'model':selected}).json()['model']==selected
-    job=auth.post('/api/v1/agents/runs',json={'agent_id':'university','text':'Mi entrega'}).json()
+    job=auth.post('/api/v1/agents/runs',json={'agent_id':'learning','text':'Mi entrega'}).json()
     assert job['model']==selected
     auth.patch('/api/v1/ai/preferences',json={'model':'test/model'})
     calls=[]
@@ -362,7 +362,7 @@ def test_model_selector_consent_and_queued_model_snapshot(auth,monkeypatch):
         def __exit__(self,*args):pass
         def post(self,url,headers,json):
             calls.append(headers['x-openclaw-model'])
-            assert headers['x-openclaw-model']==selected and json['model']=='openclaw/university'
+            assert headers['x-openclaw-model']==selected and json['model']=='openclaw/learning'
             return httpx.Response(200,request=httpx.Request('POST',url),json={'choices':[{'message':{'content':'{"reply":"Revisado","source_ids":[]}'}}]})
         def stream(self,method,url,headers,json):
             return __import__('contextlib').nullcontext(self.post(url,headers,json))
@@ -588,7 +588,7 @@ def test_weather_city_forecast_failure_cache_and_disconnect(auth,monkeypatch):
         def __exit__(self,*args):pass
         def get(self,url,params):
             if url=='https://geocoding-api.open-meteo.com/v1/search':
-                data={'results':[{'name':'Valencia','country':'España','latitude':39.47,'longitude':-0.38}]}
+                data={'results':[{'name':'Ciudad de ejemplo','country':'España','latitude':39.47,'longitude':-0.38}]}
             else:
                 assert url=='https://api.open-meteo.com/v1/forecast';assert params['latitude']==39.47
                 if broken:raise httpx.ConnectError('Offline')
@@ -596,7 +596,7 @@ def test_weather_city_forecast_failure_cache_and_disconnect(auth,monkeypatch):
             return httpx.Response(200,request=httpx.Request('GET',url),json=data)
     monkeypatch.setattr(weather.httpx,'Client',FakeClient)
     assert auth.get('/api/v1/weather').json()['configured'] is False
-    city=auth.get('/api/v1/weather/cities?q=Valencia').json()[0]
+    city=auth.get('/api/v1/weather/cities?q=Ciudad de ejemplo').json()[0]
     assert auth.post('/api/v1/weather/location',json={**city,'latitude':91}).status_code==422
     assert auth.post('/api/v1/weather/location',json=city).status_code==200
     assert auth.post('/api/v1/connectors/weather/sync').status_code==200

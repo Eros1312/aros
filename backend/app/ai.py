@@ -18,7 +18,7 @@ def context_keywords(prompt):
              'quiero','necesito','puedes','podrias','sobre','para','esta','este','estas','estos','esas','esos',
              'tarea','tareas','tema','temas','curso','cursos','asignatura','asignaturas','resume','resumen',
              'explica','explicame','prepara','preparame','hacer','hazme','favor','material','materiales',
-             'universidad','primera','segunda','ultimo','ultima','tambien','tengo','tiene','tienen'}
+             'aprendizaje','primera','segunda','ultimo','ultima','tambien','tengo','tiene','tienen'}
     return [word for word in dict.fromkeys(re.findall(r'\w+',normalized(prompt))) if len(word)>3 and word not in ignored]
 
 def record_relevance(item,words):
@@ -91,7 +91,7 @@ def agent_conversation_context(db,user,prompt,previous,agent_id):
 def context_items(db,user,prompt):
     query=select(Item).options(defer(Item.blob)).where(Item.user_id==user.id,Item.status.notin_(['archived','cancelled']),visible_items_clause(db,user))
     text=normalized(prompt)
-    area=next((a for word,a in [('prisma','prisma'),('servidor','server'),('universidad','university'),('organica','university'),('3d','printing'),('pedido','personal'),('noticias','technology')] if word in text),None)
+    area=next((a for word,a in [('evento','events'),('servidor','server'),('aprendizaje','learning'),('estudio','learning'),('recurso','resources'),('pedido','personal'),('noticias','technology')] if word in text),None)
     if area: query=query.where(Item.area==area)
     if any(word in text for word in ["me falta", "pendiente", "preparame el dia", "entregas"]):
         query=query.where(Item.kind.in_(["task","reminder","event"]),Item.status!='done')

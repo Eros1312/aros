@@ -10,19 +10,15 @@ from .config import settings
 logger=logging.getLogger('aros.worker')
 def tick():
     # Small bounded CPU jobs run before slower external connector calls.
-    from .printing_generation import process_generation_jobs
-    process_generation_jobs()
     with SessionLocal() as db:
         from .channels import reconcile_whatsapp
         reconcile_whatsapp(db)
         from .connectors import recover_connector_leases
         recover_connector_leases(db)
-        from .prisma import process_canva_jobs
+        from .events import process_canva_jobs
         process_canva_jobs()
-        from .printing import ensure_printing, refresh_printing
         owner=db.scalar(select(User).where(User.email==settings.admin_email))
         if owner and not settings.demo_mode:
-            ensure_printing(db,owner);db.commit()
             from .github_releases import ensure_github_releases
             ensure_github_releases(db,owner,enabled=False);db.commit()
         due=list(db.scalars(select(Automation).where(Automation.enabled==True,Automation.next_run<=now())))
@@ -52,33 +48,23 @@ def tick():
                     result=f'{len(items)} entregas o recordatorios próximos revisados.'
                 elif a.kind=='server_health':
                     h=server_health(); result=f"Servidor disponible · CPU {h['cpu_percent']}% · {h['scope']}"
-                elif a.kind=='university_sync':
-                    result_data=sync_connector(db,user,'university')
-                    result=f"Aula Virtual: {result_data['courses']} asignaturas; {result_data['downloaded']} documentos descargados."
-                elif a.kind=='uv_calendar_sync':
-                    from .university_calendar import sync_uv_calendar
-                    result_data=sync_uv_calendar(db,user)
-                    result=f"Horario UV: {result_data['classes']} clases y {result_data['exams']} exámenes verificados."
-                elif a.kind=='printing_discovery':
-                    discovered=refresh_printing(db,user,manual=job.origin=='manual')
-                    result=json.dumps(discovered,ensure_ascii=False)
                 elif a.kind=='github_releases':
                     from .github_releases import refresh_github_releases
                     discovered=refresh_github_releases(db,user,manual=job.origin=='manual')
                     result=json.dumps(discovered,ensure_ascii=False)
                 elif a.kind=='canva_sync':
-                    from .prisma import sync_canva
+                    from .events import sync_canva
                     details=sync_canva(db,user)
-                    result=f"{details['count']} diseños PRISMA de Canva sincronizados."
+                    result=f"{details['count']} diseños Eventos de Canva sincronizados."
                 elif a.kind=='connector_sync':
-                    keys=[c.id for c in db.scalars(select(Connector).where(Connector.user_id==user.id,Connector.id.notin_(['_whatsapp-control','_printing-discovery','university-calendar','_canva-application','canva','github-releases']),Connector.status.in_(['connected','error'])))]
+                    keys=[c.id for c in db.scalars(select(Connector).where(Connector.user_id==user.id,Connector.id.notin_(['_whatsapp-control','_canva-application','canva','github-releases']),Connector.status.in_(['connected','error'])))]
                     failures=[]
                     for key in keys:
                         try: sync_connector(db,user,key)
                         except Exception: failures.append(key)
                     if failures: raise RuntimeError('Revisa estas conexiones: '+', '.join(failures))
                     result=f'{len(keys)} conexiones sincronizadas.'
-                else:
+                elif a.kind=='daily_digest':
                     from .source_access import visible_items_clause, resource_fingerprint
                     db.scalar(select(User).where(User.id==user.id).with_for_update().execution_options(populate_existing=True))
                     tasks=list(db.scalars(select(Item).where(Item.user_id==user.id,Item.kind.in_(['task','reminder']),Item.status.notin_(['done','archived','cancelled']),visible_items_clause(db,user)).order_by(Item.due_at).limit(6)))
@@ -86,9 +72,10 @@ def tick():
                     from zoneinfo import ZoneInfo
                     note=Item(user_id=user.id,kind='note',area='personal',title='Resumen del día · '+datetime.now(ZoneInfo('Europe/Madrid')).date().isoformat(),description=text,status='active',source='automation-result',external_id=job.id,data={'automation_id':a.id,'run_id':job.id,'empty_selection':not bool(tasks),'source_references':[{'id':t.id,'version':t.version,'content_hash':resource_fingerprint(t)} for t in tasks]})
                     db.add(note); db.flush(); db.add(Inbox(user_id=user.id,item_id=note.id,title=note.title,area='personal',reason='Tu resumen de tareas está preparado.'));result='Resumen guardado en Notas y en tu Inbox.'
+                else:raise RuntimeError('Esta automatización ya no está disponible.')
                 job=db.get(Run,job.id); db.refresh(job)
                 if job.status!='running':db.rollback();continue
-                job.status='failed' if a.kind in ['printing_discovery','github_releases'] and discovered.get('outcome')=='error' else 'completed'
+                job.status='failed' if a.kind in ['github_releases'] and discovered.get('outcome')=='error' else 'completed'
                 job.result=result; job.finished_at=now(); audit(db,user,'automation.'+job.status,a.id); db.commit()
             except Exception as exc:
                 db.rollback(); job=db.get(Run,job.id); db.refresh(job)

@@ -27,7 +27,6 @@ from .channels import router as channel_router
 from .openclaw_tools import router as tool_router
 from .google_setup import router as google_router
 from .workspace import router as workspace_router
-from .printing_generation import router as printing_generation_router
 from .github_releases import router as github_releases_router
 from .source_access import visible_items_clause
 logger=logging.getLogger('aros')
@@ -37,7 +36,10 @@ DbDep=Annotated[object,Depends(get_db)]
 @asynccontextmanager
 async def lifespan(app):
     settings.validate_production()
-    if settings.app_env != 'production': Base.metadata.create_all(engine)
+    if settings.app_env != 'production':
+        Base.metadata.create_all(engine)
+        from .workspace_migration import generalize_workspace
+        with engine.begin() as connection:generalize_workspace(connection)
     from .database import SessionLocal
     with SessionLocal() as db: setup_user(db)
     yield
@@ -49,7 +51,6 @@ app.include_router(channel_router)
 app.include_router(tool_router)
 app.include_router(google_router)
 app.include_router(workspace_router)
-app.include_router(printing_generation_router)
 app.include_router(github_releases_router)
 app.add_middleware(CORSMiddleware,allow_origins=[settings.public_origin],allow_credentials=True,allow_methods=['GET','POST','PATCH','DELETE'],allow_headers=['Content-Type','Authorization','X-Aros-Client','X-Confirmation'])
 rate_buckets=defaultdict(deque)
@@ -66,7 +67,7 @@ async def protection(request,call_next):
         length=request.headers.get('content-length')
         if length:
             try:
-                limit=31_000_000 if request.url.path in ['/api/v1/connectors/university/import','/api/v1/prisma/import'] else 11_000_000
+                limit=31_000_000 if request.url.path in ['/api/v1/events/import'] else 11_000_000
                 if int(length)>limit: return JSONResponse({'detail':'El archivo supera el límite de subida'},413)
             except ValueError: return JSONResponse({'detail':'Tamaño de petición inválido'},400)
     start=time.monotonic()
@@ -75,7 +76,7 @@ async def protection(request,call_next):
     response.headers['X-Content-Type-Options']='nosniff'
     response.headers['Referrer-Policy']='same-origin'
     response.headers['Permissions-Policy']='camera=(), geolocation=()'
-    response.headers['Content-Security-Policy']="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cdn-learn.adafruit.com; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    response.headers['Content-Security-Policy']="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
     if request.url.path.startswith('/api/'):
         response.headers['Cache-Control']='no-store'
         logger.info(json.dumps({'trace_id':request_id,'method':request.method,'path':request.url.path,'status':response.status_code,'ms':round((time.monotonic()-start)*1000)}))
@@ -188,15 +189,15 @@ def inbox_task(inbox_id:str,user:UserDep,db:DbDep):
     db.add(item); db.flush(); alert.state='resolved'; audit(db,user,'inbox.converted_to_task',item.id); db.commit(); return item
 @app.post('/api/v1/documents/upload',response_model=ItemOut,status_code=201)
 def upload(user:UserDep,db:DbDep,file:UploadFile=File(...),area:str=Form('personal'),project_id:str|None=Form(None)):
-    if area not in ['university','prisma','technology','printing','server','personal']: raise HTTPException(422,'Área inválida')
+    if area not in ['learning','events','technology','resources','server','personal']: raise HTTPException(422,'Área inválida')
     if project_id:
         from .conversation_engine import project_for_context
         project_for_context(db,user,project_id,area)
     content=file.file.read(10_000_001)
     if len(content)>10_000_000: raise HTTPException(413,'El archivo supera 10 MB')
     name=Path(file.filename or 'Archivo').name[:200]; extension=Path(name).suffix.lower(); text=''
-    allowed={'.pdf':'application/pdf','.txt':'text/plain','.md':'text/markdown','.stl':'application/octet-stream','.3mf':'application/octet-stream','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg'}
-    if extension not in allowed: raise HTTPException(422,'Admite PDF, texto, imágenes, STL y 3MF')
+    allowed={'.pdf':'application/pdf','.txt':'text/plain','.md':'text/markdown','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg'}
+    if extension not in allowed: raise HTTPException(422,'Admite PDF, texto e imágenes')
     if extension in ['.txt','.md']:
         try: text=content.decode('utf-8')[:150000]
         except UnicodeDecodeError: raise HTTPException(422,'El texto debe estar codificado en UTF-8')
@@ -206,14 +207,11 @@ def upload(user:UserDep,db:DbDep,file:UploadFile=File(...),area:str=Form('person
             if reader.is_encrypted: raise ValueError('encrypted')
             text='\n'.join((p.extract_text() or '')[:10000] for p in reader.pages[:40])[:150000]
         except Exception: raise HTTPException(422,'No se pudo leer el PDF. Comprueba que sea válido y no esté cifrado.')
-    item=Item(user_id=user.id,kind='model' if extension in ['.stl','.3mf'] else 'document',area=area,title=name,description=text,source='upload',status='active',blob=content,data={'filename':name,'mime':allowed[extension],'size':len(content),'extracted':bool(text),'partial':extension=='.pdf',**({'project_id':project_id} if project_id else {})})
+    item=Item(user_id=user.id,kind='document',area=area,title=name,description=text,source='upload',status='active',blob=content,data={'filename':name,'mime':allowed[extension],'size':len(content),'extracted':bool(text),'partial':extension=='.pdf',**({'project_id':project_id} if project_id else {})})
     db.add(item); db.flush(); audit(db,user,'document.uploaded',item.id); db.commit(); return item
 @app.get('/api/v1/documents/{item_id}/download')
 def download(item_id:str,user:UserDep,db:DbDep):
     item=owned_item(db,user,item_id)
-    if item.source=='printing-generation':
-        from .printing_generation import download_generation
-        return download_generation(item_id,user,db)
     if item.blob is None: raise HTTPException(404,'Este recurso no contiene un archivo local')
     from urllib.parse import quote
     filename=item.data.get('filename',item.title)
@@ -222,18 +220,12 @@ from .account_connectors import router as account_connections_router
 app.include_router(account_connections_router)
 from .weather import router as weather_router
 app.include_router(weather_router)
-from .university import router as university_router
-app.include_router(university_router)
-from .university_calendar import router as university_calendar_router
-app.include_router(university_calendar_router)
-from .printing import router as printing_router
-app.include_router(printing_router)
-from .prisma import router as prisma_router
-app.include_router(prisma_router)
+from .events import router as events_router
+app.include_router(events_router)
 
 @app.get('/api/v1/connectors')
 def connectors(user:UserDep,db:DbDep):
-    return [{'id':c.id,'name':c.name,'status':c.status,'scopes':c.scopes,'last_sync':c.last_sync,'error':c.error,'details':c.sync_details,'implemented':c.id in ['gmail','calendar','drive','rss','server','github','notion','vercel','weather','university','canva','university-calendar']} for c in db.scalars(select(Connector).where(Connector.user_id==user.id,Connector.id.notin_(['google-application','_whatsapp-control','_canva-application','_printing-discovery','github-releases'])).order_by(Connector.name))]
+    return [{'id':c.id,'name':c.name,'status':c.status,'scopes':c.scopes,'last_sync':c.last_sync,'error':c.error,'details':c.sync_details,'implemented':c.id in ['gmail','calendar','drive','rss','server','github','notion','vercel','weather','canva']} for c in db.scalars(select(Connector).where(Connector.user_id==user.id,Connector.id.notin_(['google-application','_whatsapp-control','_canva-application','github-releases'])).order_by(Connector.name))]
 @app.post('/api/v1/connectors/{key}/authorize')
 def authorize(key:str,user:UserDep,db:DbDep): return oauth_start(db,user,key)
 @app.get('/api/v1/oauth/google/callback')
@@ -241,34 +233,31 @@ def callback(db:DbDep,state:str,code:str='',error:str|None=None):
     ok=oauth_callback(db,state,code,error); return RedirectResponse('/?section=connections&oauth='+('ok' if ok else 'cancelled'))
 @app.post('/api/v1/connectors/{key}/sync')
 def synchronize(key:str,user:UserDep,db:DbDep):
-    if key in ['_whatsapp-control','_canva-application','_printing-discovery']:raise HTTPException(404,'Conector no encontrado')
-    if key=='university-calendar':
-        from .university_calendar import sync_uv_calendar
-        return sync_uv_calendar(db,user)
+    if key in ['_whatsapp-control','_canva-application']:raise HTTPException(404,'Conector no encontrado')
     if key=='canva':
-        from .prisma import sync_canva
+        from .events import sync_canva
         return sync_canva(db,user)
     return sync_connector(db,user,key)
 @app.patch('/api/v1/connectors/{key}')
 def pause_connector(key:str,payload:dict,user:UserDep,db:DbDep):
     db.scalar(select(User).where(User.id==user.id).with_for_update())
-    if key in ['_whatsapp-control','_canva-application','_printing-discovery']:raise HTTPException(404,'Conector no encontrado')
+    if key in ['_whatsapp-control','_canva-application']:raise HTTPException(404,'Conector no encontrado')
     if payload.get('status') not in ['paused','connected']: raise HTTPException(422,'Estado inválido')
     c=db.get(Connector,(key,user.id))
     if not c: raise HTTPException(404,'Conector no encontrado')
-    if payload['status']=='connected' and key in ['gmail','calendar','drive','github','notion','vercel','university','canva'] and not c.encrypted_tokens: raise HTTPException(409,'Conecta la cuenta primero')
+    if payload['status']=='connected' and key in ['gmail','calendar','drive','github','notion','vercel','canva'] and not c.encrypted_tokens: raise HTTPException(409,'Conecta la cuenta primero')
     c.status=payload['status'];c.sync_started_at=None
     db.execute(update(Connector).where(Connector.id==key,Connector.user_id==user.id).values(revision=Connector.revision+1))
     audit(db,user,'connector.'+c.status,key); db.commit(); return {'ok':True}
 @app.delete('/api/v1/connectors/{key}')
 def disconnect(key:str,user:UserDep,db:DbDep,x_confirmation:str|None=Header(default=None)):
     db.scalar(select(User).where(User.id==user.id).with_for_update())
-    if key in ['_whatsapp-control','_canva-application','_printing-discovery']:raise HTTPException(404,'Conector no encontrado')
+    if key in ['_whatsapp-control','_canva-application']:raise HTTPException(404,'Conector no encontrado')
     c=db.get(Connector,(key,user.id))
     if not c: raise HTTPException(404,'Conector no encontrado')
     consume_confirmation(db,user,'connector.disconnect',{'id':key},x_confirmation)
     if c.encrypted_tokens and key=='canva':
-        from .prisma import revoke_canva
+        from .events import revoke_canva
         revoke_canva(db,user)
     if c.encrypted_tokens and key in ['gmail','calendar','drive']:
         import httpx

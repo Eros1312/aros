@@ -10,13 +10,12 @@ from .database import Connector, Item
 
 SOURCE_CONNECTORS = {
     'gmail': 'gmail', 'gmail-order': 'gmail', 'calendar': 'calendar',
-    'drive': 'drive', 'canva': 'canva', 'university': 'university', 'rss': 'rss',
+    'drive': 'drive', 'canva': 'canva', 'rss': 'rss',
     'github': 'github', 'notion': 'notion', 'vercel': 'vercel',
-    'uv-calendar': 'university-calendar',
     'github-release': 'github-releases',
 }
 INACTIVE_STATES = ('archived', 'cancelled', 'canceled', 'withdrawn')
-DERIVED_SOURCES = {'agent-execution','agent-selection','agent-autonomous','agent-conversation','automation-result','printing-generation','agent-review'}
+DERIVED_SOURCES = {'agent-execution','agent-selection','agent-autonomous','agent-conversation','automation-result','agent-review'}
 
 
 def resource_fingerprint(item):
@@ -75,7 +74,7 @@ def visible_items_clause(db, user):
         references[ident] = refs
         if source == 'automation-result' and isinstance(data, dict) and data.get('empty_selection') is True:
             empty_allowed.add(ident)
-        if source in ['agent-conversation','printing-generation','manual'] and isinstance(data, dict) and data.get('origin_user_prompt') is True:
+        if source in ['agent-conversation','manual'] and isinstance(data, dict) and data.get('origin_user_prompt') is True:
             empty_allowed.add(ident)
     ids = {r['id'] for refs in references.values() for r in refs}
     current = {}

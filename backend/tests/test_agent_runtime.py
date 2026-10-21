@@ -47,7 +47,7 @@ def test_review_capacity_and_interactive_priority(enabled,monkeypatch):
         u=owner(db);thread=scheduled(db,u)
         review=AgentJob(user_id=u.id,agent_id='personal',thread_id=thread,is_review=True,prompt='Review',created_at='2020-01-01T00:00:00+00:00');db.add(review);db.commit()
     for agent in ['aros','technology','server']:assert enabled.post('/api/v1/agents/runs',json={'agent_id':agent,'text':'Interactive'}).status_code==202
-    assert enabled.post('/api/v1/agents/runs',json={'agent_id':'printing','text':'Fourth'}).status_code==409
+    assert enabled.post('/api/v1/agents/runs',json={'agent_id':'resources','text':'Fourth'}).status_code==409
     called=[]
     def complete(user,prompt,records,agent_id,**kwargs):called.append(prompt);return 'Done',[]
     monkeypatch.setattr(bridge,'completion',complete);bridge.process_jobs(limit=1)

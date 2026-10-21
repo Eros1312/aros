@@ -7,7 +7,7 @@ from .database import Item,now
 from .services import owned_item,attention_for_item
 from sqlalchemy import update
 
-class PrismaDesignIn(BaseModel):
+class EventDesignIn(BaseModel):
     model_config=ConfigDict(extra='forbid',str_strip_whitespace=True)
     brief:str=Field(min_length=10,max_length=4000)
     asset_id:str|None=Field(default=None,min_length=1,max_length=36)
@@ -34,19 +34,19 @@ def collect_actions(raw,agent,allow_design=True):
                 p=action.get('payload',{})
                 if not isinstance(p.get('id'),str) or not isinstance(p.get('version'),int) or p['version']<1: continue
                 payload={'id':p['id'],'version':p['version']}
-            elif action.get('type')=='prisma.design':
-                if agent not in ['aros','prisma'] or not allow_design:continue
-                payload=PrismaDesignIn.model_validate(action.get('payload')).model_dump()
+            elif action.get('type')=='events.design':
+                if agent not in ['aros','events'] or not allow_design:continue
+                payload=EventDesignIn.model_validate(action.get('payload')).model_dump()
             else: continue
             result.append({'type':action['type'],'payload':payload})
         except (ValidationError,TypeError,AttributeError): continue
     return result
 
 def apply_action(db,user,action,agent):
-    if action['type']=='prisma.design':
-        if agent not in ['aros','prisma']:raise HTTPException(403,'Solo Aros y PRISMA pueden preparar diseños Canva')
-        from .prisma import queue_design,BriefIn
-        payload=PrismaDesignIn.model_validate(action['payload'])
+    if action['type']=='events.design':
+        if agent not in ['aros','events']:raise HTTPException(403,'Solo Aros y Eventos pueden preparar diseños Canva')
+        from .events import queue_design,BriefIn
+        payload=EventDesignIn.model_validate(action['payload'])
         # Queue and the applied receipt share the caller's transaction.
         return queue_design(BriefIn(**payload.model_dump()),user,db)
     if action['type']=='item.create':

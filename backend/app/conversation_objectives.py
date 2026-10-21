@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .agent_capabilities import CapabilityBlocked
 import re
 
-WRITE_TOOLS = {'items.create', 'items.update', 'printing.favorite','printing.organizer.create'}
+WRITE_TOOLS = {'items.create', 'items.update'}
 
 def required_read_objective_tools(prompt):
     """Recognize explicit multi-reading requests, never permission or NLP intent.
@@ -28,7 +28,7 @@ def required_read_objective_tools(prompt):
     objects={
         'weather.current':r'\b(?:tiempo|clima|temperatura|prevision(?:\s+meteorologica)?|meteorologia)\b',
         'calendar.list':r'\b(?:calendarios?|agenda|horario)\b',
-        'resources.read':r'\b(?:fichas?|documentos?|archivos?|recursos?|modelo(?:s)?(?:3d)?|catalogos?|notas?|apuntes?|material(?:es)?|guion(?:es)?|informes?|manual(?:es)?|pdf|carteles?|textos?)\b',
+        'resources.read':r'\b(?:fichas?|documentos?|archivos?|recursos?|modelo(?:s)?|catalogos?|notas?|apuntes?|material(?:es)?|guion(?:es)?|informes?|manual(?:es)?|pdf|carteles?|textos?)\b',
     }
     found=set()
     for index,command in enumerate(commands):

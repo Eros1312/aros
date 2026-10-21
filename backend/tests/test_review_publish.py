@@ -16,7 +16,7 @@ def review(db,user,area='personal'):
 
 
 def test_review_is_one_draft_per_area_day_with_idempotent_verified_effect(enabled):
-    source=resource('personal');other=resource('prisma')
+    source=resource('personal');other=resource('events')
     with SessionLocal() as db:
         user=db.scalar(select(User).where(User.email=='aros@local'));original=db.get(Item,source)
         job=review(db,user)
@@ -26,10 +26,10 @@ def test_review_is_one_draft_per_area_day_with_idempotent_verified_effect(enable
         next_job=review(db,user)
         revised=publish_daily_review(db,user,next_job,'La segunda revisión conserva fuentes y actualiza el borrador del día.',[reference(original)])
         assert revised['id']==first['id'] and revised['version']==2
-        prisma=publish_daily_review(db,user,review(db,user,'prisma'),'La revisión PRISMA mantiene todos los diseños sin aprobar.',[reference(db.get(Item,other))])
-        assert prisma['id']!=first['id']
+        events=publish_daily_review(db,user,review(db,user,'events'),'La revisión Eventos mantiene todos los diseños sin aprobar.',[reference(db.get(Item,other))])
+        assert events['id']!=first['id']
         assert db.get(Item,first['id']).data['review_state']=='draft'
-        assert not list(db.scalars(select(Inbox).where(Inbox.item_id.in_([first['id'],prisma['id']]))))
+        assert not list(db.scalars(select(Inbox).where(Inbox.item_id.in_([first['id'],events['id']]))))
         db.commit();ident=first['id']
     assert enabled.get('/api/v1/items/'+ident).status_code==200
     with SessionLocal() as db:db.get(Item,source).data={'revoked':True};db.commit()

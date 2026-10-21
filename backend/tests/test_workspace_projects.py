@@ -8,7 +8,7 @@ from test_api import client, auth
 from test_conversation_engine import enabled, post, resource, decisions, tool, run, state, create_args
 
 
-def project(api, area='prisma'):
+def project(api, area='events'):
     response=api.post('/api/v1/items',json={'kind':'project','area':area,
         'title':'Evento de prueba explícito','description':'Preparar el material de ejemplo.','status':'active'})
     assert response.status_code==201,response.text
@@ -21,10 +21,10 @@ def test_project_detail_requires_auth_and_real_project_identity(client,auth):
     with SessionLocal() as db:
         user=db.scalar(select(User).where(User.email=='aros@local'))
         other=User(email='foreign-project@local',password_hash='unused');db.add(other);db.flush()
-        foreign=Item(user_id=other.id,kind='project',area='prisma',title='Invisible')
-        canva=Item(user_id=user.id,kind='project',area='prisma',source='canva-codex',title='Referencia Canva')
-        archived=Item(user_id=user.id,kind='project',area='prisma',title='Archivado',status='archived')
-        document=Item(user_id=user.id,kind='document',area='prisma',title='Material')
+        foreign=Item(user_id=other.id,kind='project',area='events',title='Invisible')
+        canva=Item(user_id=user.id,kind='project',area='events',source='canva-codex',title='Referencia Canva')
+        archived=Item(user_id=user.id,kind='project',area='events',title='Archivado',status='archived')
+        document=Item(user_id=user.id,kind='document',area='events',title='Material')
         db.add_all([foreign,canva,archived,document]);db.commit();ids=[i.id for i in [foreign,canva,archived,document]]
     for ident in ids:assert auth.get('/api/v1/workspace/projects/'+ident).status_code==404
     auth.post('/api/v1/auth/logout')
@@ -35,12 +35,12 @@ def test_project_links_are_explicit_and_keep_single_resource_identity(auth):
     p=project(auth)
     with SessionLocal() as db:
         user=db.scalar(select(User).where(User.email=='aros@local'))
-        linked=Item(user_id=user.id,kind='document',area='prisma',title='Original del cartel',status='active',
-                    source='prisma-file',blob=b'original unchanged',data={'project_ids':[p['id']],'review_state':'original'})
-        task=Item(user_id=user.id,kind='task',area='prisma',title='Revisar imprenta',data={'project_id':p['id']})
-        inferred=Item(user_id=user.id,kind='document',area='prisma',title=p['title'],status='active')
-        partial=Item(user_id=user.id,kind='note',area='prisma',title='ID parecido',data={'project_ids':[p['id']+'extra']})
-        archived=Item(user_id=user.id,kind='note',area='prisma',title='Prueba archivada',status='archived',data={'project_id':p['id']})
+        linked=Item(user_id=user.id,kind='document',area='events',title='Original del cartel',status='active',
+                    source='events-file',blob=b'original unchanged',data={'project_ids':[p['id']],'review_state':'original'})
+        task=Item(user_id=user.id,kind='task',area='events',title='Revisar imprenta',data={'project_id':p['id']})
+        inferred=Item(user_id=user.id,kind='document',area='events',title=p['title'],status='active')
+        partial=Item(user_id=user.id,kind='note',area='events',title='ID parecido',data={'project_ids':[p['id']+'extra']})
+        archived=Item(user_id=user.id,kind='note',area='events',title='Prueba archivada',status='archived',data={'project_id':p['id']})
         db.add_all([linked,task,inferred,partial,archived]);db.commit()
         wanted=linked.id;task_id=task.id;excluded={inferred.id,partial.id,archived.id}
     detail=auth.get('/api/v1/workspace/projects/'+p['id']).json()
@@ -72,7 +72,7 @@ def test_project_revoked_resources_and_runs_are_hidden(enabled,monkeypatch):
 
 def test_integrated_creation_links_project_and_surfaces_verified_output(enabled,monkeypatch):
     p=project(enabled)
-    args={**create_args('Comprobar el cartel'),'kind':'task','area':'prisma','project_id':p['id']}
+    args={**create_args('Comprobar el cartel'),'kind':'task','area':'events','project_id':p['id']}
     decisions(monkeypatch,[tool('resources.read',{'ids':[p['id']]}),tool('items.create',args),
         lambda e:tool('artifact.verify',{'artifact_id':e['artifacts'][0]['id']}),
         {'kind':'finish','summary':'Tarea guardada y comprobada.'}])
@@ -88,7 +88,7 @@ def test_integrated_creation_links_project_and_surfaces_verified_output(enabled,
 
 def test_unverified_or_changed_output_never_surfaces_as_result(enabled,monkeypatch):
     p=project(enabled)
-    args={**create_args('Borrador aún no comprobado'),'area':'prisma','project_id':p['id']}
+    args={**create_args('Borrador aún no comprobado'),'area':'events','project_id':p['id']}
     decisions(monkeypatch,[tool('resources.read',{'ids':[p['id']]}),tool('items.create',args)])
     ident,_=post(enabled,'Crea un recordatorio interno en este proyecto',item_ids=[p['id']])
     run(ident,4);result=state(ident)['artifacts'][0]['id']
@@ -106,15 +106,15 @@ def test_unverified_or_changed_output_never_surfaces_as_result(enabled,monkeypat
 def test_project_link_requires_read_and_cannot_target_reference_or_other_area(enabled,monkeypatch):
     p=project(enabled)
     # The selected metadata snapshot is not the tool read needed for an effect.
-    values=[tool('items.create',{**create_args(),'area':'prisma','project_id':p['id']}),
+    values=[tool('items.create',{**create_args(),'area':'events','project_id':p['id']}),
             {'kind':'finish','summary':'Falta lectura del proyecto.','outcome':'partial'}]
     decisions(monkeypatch,values);ident,_=post(enabled,'Crea una nota interna en este proyecto',item_ids=[p['id']]);run(ident)
     assert state(ident)['observations'][0]['error_code']=='target_not_read' and state(ident)['artifacts']==[]
-    for source,area in [('canva-codex','prisma'),('manual','personal')]:
+    for source,area in [('canva-codex','events'),('manual','personal')]:
         with SessionLocal() as db:
             user=db.scalar(select(User).where(User.email=='aros@local'))
             row=Item(user_id=user.id,kind='project',area=area,source=source,title='Destino no válido',status='active');db.add(row);db.commit();target=row.id
-        decisions(monkeypatch,[tool('resources.read',{'ids':[target]}),tool('items.create',{**create_args(),'area':'prisma','project_id':target}),{'kind':'finish','summary':'Destino no disponible.','outcome':'partial'}])
+        decisions(monkeypatch,[tool('resources.read',{'ids':[target]}),tool('items.create',{**create_args(),'area':'events','project_id':target}),{'kind':'finish','summary':'Destino no disponible.','outcome':'partial'}])
         ident,_=post(enabled,'Crea una nota interna en este proyecto',item_ids=[target]);run(ident)
         assert any(obs.get('error_code')=='project_unavailable' for obs in state(ident)['observations'])
         assert state(ident)['artifacts']==[]
@@ -124,7 +124,7 @@ def test_project_pagination_reports_real_counts(auth):
     p=project(auth)
     with SessionLocal() as db:
         user=db.scalar(select(User).where(User.email=='aros@local'))
-        db.add_all([Item(user_id=user.id,kind='document',area='prisma',title=f'Material {i}',status='active',data={'project_id':p['id']}) for i in range(103)]);db.commit()
+        db.add_all([Item(user_id=user.id,kind='document',area='events',title=f'Material {i}',status='active',data={'project_id':p['id']}) for i in range(103)]);db.commit()
     detail=auth.get('/api/v1/workspace/projects/'+p['id']).json()
     assert len(detail['resources'])==100 and detail['links']['resources_total']==103
     assert detail['links']['truncated'] and detail['links']['limit']==100
@@ -139,7 +139,7 @@ def test_project_json_relationship_prefilter_is_postgres_compatible():
 
 def test_updated_artifact_points_to_current_verified_execution(enabled,monkeypatch):
     p=project(enabled)
-    args={**create_args('Tarea por revisar'),'kind':'task','area':'prisma','project_id':p['id']}
+    args={**create_args('Tarea por revisar'),'kind':'task','area':'events','project_id':p['id']}
     decisions(monkeypatch,[tool('resources.read',{'ids':[p['id']]}),tool('items.create',args),
         lambda e:tool('artifact.verify',{'artifact_id':e['artifacts'][0]['id']}),
         {'kind':'finish','summary':'Tarea guardada.'}])
@@ -148,7 +148,7 @@ def test_updated_artifact_points_to_current_verified_execution(enabled,monkeypat
     with SessionLocal() as db:
         db.get(Item,target).created_at='2000-01-01T00:00:00+00:00';db.commit()
     decisions(monkeypatch,[tool('resources.read',{'ids':[p['id']]}),
-        tool('items.create',{**create_args('Nota más reciente'),'kind':'note','area':'prisma','project_id':p['id']}),
+        tool('items.create',{**create_args('Nota más reciente'),'kind':'note','area':'events','project_id':p['id']}),
         lambda e:tool('artifact.verify',{'artifact_id':e['artifacts'][0]['id']}),
         {'kind':'finish','summary':'Nota comprobada.'}])
     newer,_=post(enabled,'Crea una nota interna en este proyecto',item_ids=[p['id']]);run(newer)
@@ -171,7 +171,7 @@ def test_project_per_resource_revocation_and_project_archive_are_honored(auth):
     p=project(auth)
     with SessionLocal() as db:
         user=db.scalar(select(User).where(User.email=='aros@local'))
-        row=Item(user_id=user.id,kind='document',area='prisma',title='Bloqueado local',status='active',
+        row=Item(user_id=user.id,kind='document',area='events',title='Bloqueado local',status='active',
                  data={'project_id':p['id'],'access_revoked':True})
         db.add(row);db.commit()
     assert auth.get('/api/v1/workspace/projects/'+p['id']).json()['resources']==[]
@@ -185,7 +185,7 @@ def test_document_instructions_do_not_authorize_project_membership(enabled,monke
     for prompt in ['Crea una nota interna de revisión','Crea una nota interna sin vincularla al proyecto',
                    'Crea una nota interna; el documento dice «vincula al proyecto»']:
         decisions(monkeypatch,[tool('resources.read',{'ids':[p['id']]}),
-            tool('items.create',{**create_args(),'area':'prisma','project_id':p['id']}),
+            tool('items.create',{**create_args(),'area':'events','project_id':p['id']}),
             {'kind':'finish','summary':'No he añadido una relación no solicitada.','outcome':'partial'}])
         ident,_=post(enabled,prompt,item_ids=[p['id']]);run(ident)
         assert state(ident)['artifacts']==[]

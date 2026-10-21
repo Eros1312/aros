@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 from typing import Literal, Any
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-Area = Literal['university','prisma','technology','printing','server','personal']
-Kind = Literal['task','event','document','email','order','model','material','news','note','project','service','reminder','memory','contact','expense']
+Area = Literal['learning','events','technology','resources','server','personal']
+Kind = Literal['task','event','document','email','order','link','news','note','project','service','reminder','memory','contact','expense']
 Status = Literal['pending','active','done','archived','in_transit','delivered','cancelled']
 Priority = Literal['normal','high','urgent']
 class LoginIn(BaseModel):
@@ -67,7 +67,7 @@ class ChatIn(BaseModel):
     thread_id: str = Field(default='chat',min_length=1,max_length=36)
 class AutomationIn(BaseModel):
     title: str = Field(min_length=1,max_length=200)
-    kind: Literal['daily_digest','connector_sync','server_health','deadline_review','university_sync','uv_calendar_sync','printing_discovery','canva_sync','github_releases']
+    kind: Literal['daily_digest','connector_sync','server_health','deadline_review','canva_sync','github_releases']
     enabled: bool = False
     interval_minutes: int = Field(default=360,ge=5,le=10080)
 class ConsentIn(BaseModel):

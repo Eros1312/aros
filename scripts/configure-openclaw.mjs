@@ -13,7 +13,7 @@ v.agents.defaults.modelPolicy={allow:[model,...(design?[design]:[])]};
 v.tools={deny:[],allow:['aros_resources','aros_prepare_action','session_status'],elevated:{enabled:false}};
 for (const [id,a] of Object.entries(v.agents.entries)) {
   a.model={primary:model,fallbacks:[]}; a.utilityModel=model; a.decisionModel=model;
-  a.modelPolicy={allow:[model,...(id==='prisma'&&design?[design]:[])]};
+  a.modelPolicy={allow:[model,...(id==='events'&&design?[design]:[])]};
   a.tools={allow:id==='aros-planner'?['session_status']:['aros_resources','aros_prepare_action']};
   a.skills=[];
   fs.mkdirSync(a.workspace,{recursive:true,mode:0o700});

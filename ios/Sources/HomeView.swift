@@ -128,7 +128,7 @@ struct HomeContent: View {
         Button { store.open(.inbox) } label: {
             HStack(spacing: 10) {
                 Image(systemName: "tray.fill").font(.subheadline).foregroundStyle(.white)
-                    .frame(width: 29, height: 29).background(Area.prisma.tint.gradient, in: RoundedRectangle(cornerRadius: 9)).accessibilityHidden(true)
+                    .frame(width: 29, height: 29).background(Area.events.tint.gradient, in: RoundedRectangle(cornerRadius: 9)).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(store.dashboard.unresolved.isEmpty ? "Todo al día" : "\(store.dashboard.unresolved.count) cosas")
                         .font(.subheadline.weight(.semibold)).foregroundStyle(ArosTheme.ink)
@@ -165,10 +165,10 @@ struct AreaCard: View {
                     MetricRow(metric: metric, tint: [.cyan, .purple, .orange][index % 3])
                     if index < metrics.count - 1 { Divider().opacity(0.4) }
                 }
-            } else if summary.area == .prisma && store.connected && !store.resources.contains(where: {
-                $0.area == .prisma && $0.kind == "event" && $0.status != "archived" && (UniversityResourceOrder.date($0.dueAt) ?? .distantPast) > Date()
+            } else if summary.area == .events && store.connected && !store.resources.contains(where: {
+                $0.area == .events && $0.kind == "event" && $0.status != "archived" && (LearningResourceOrder.date($0.dueAt) ?? .distantPast) > Date()
             }) {
-                ForEach(PrismaHomeSummary.rows(store.resources)) { row in
+                ForEach(EventsHomeSummary.rows(store.resources)) { row in
                     SummaryLine(row: row, tint: summary.area.tint, compact: false)
                 }
             } else {
@@ -204,12 +204,9 @@ struct CardDecoration: View {
     let area: Area
     var body: some View {
         ZStack {
-            if area == .university {
-                Circle().fill(LinearGradient(colors: [.cyan.opacity(0.7), area.tint, .purple.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                CrystalFacet().fill(.white.opacity(0.7))
-                CrystalFacet().stroke(.white, lineWidth: 0.8)
-                Path { p in p.move(to: CGPoint(x: 40, y: 10)); p.addLine(to: CGPoint(x: 57, y: 77)); p.addLine(to: CGPoint(x: 105, y: 38)); p.move(to: CGPoint(x: 57, y: 77)); p.addLine(to: CGPoint(x: 78, y: 125)); p.move(to: CGPoint(x: 57, y: 77)); p.addLine(to: CGPoint(x: 12, y: 111)) }.stroke(.white, lineWidth: 1)
-            } else if area == .prisma {
+            if area == .learning {
+                Image(systemName: "book.closed.fill").font(.system(size: 112)).foregroundStyle(area.tint)
+            } else if area == .events {
                 RoundedRectangle(cornerRadius: 20).fill(LinearGradient(colors: [.pink.opacity(0.6), area.tint], startPoint: .top, endPoint: .bottom)).rotationEffect(.degrees(-12))
                 ForEach(0..<3) { index in
                     Capsule().fill(.white.opacity(0.4)).frame(width: 13, height: 95).rotationEffect(.degrees(Double(index * 22 - 20))).offset(x: CGFloat(index * 35 - 35), y: -10)
@@ -217,38 +214,14 @@ struct CardDecoration: View {
                 ForEach(0..<5) { index in
                     Circle().fill(area.tint).frame(width: 27, height: 27).offset(x: CGFloat(index * 28 - 55), y: CGFloat(index % 2 == 0 ? 63 : 50))
                 }
-            } else if area == .printing {
-                VStack(spacing: -3) {
-                    ForEach(0..<7) { row in
-                        HStack(spacing: -3) {
-                            ForEach(0..<6) { _ in
-                                Image(systemName: "hexagon.fill").font(.system(size: 25)).foregroundStyle(Color.gray.opacity(0.7)).overlay(Image(systemName: "hexagon").font(.system(size: 25, weight: .medium)).foregroundStyle(.white))
-                            }
-                        }.offset(x: row % 2 == 0 ? 0 : 11)
-                    }
-                }.clipShape(PrintedSilhouette())
+            } else if area == .resources {
+                Image(systemName: "folder.fill").font(.system(size: 112)).foregroundStyle(area.tint)
             } else if area == .technology {
                 ArosOrb(size: 122)
             }
         }
     }
 }
-struct CrystalFacet: Shape {
-    func path(in r: CGRect) -> Path {
-        var p = Path(); p.move(to: CGPoint(x: r.width * 0.3, y: r.height * 0.06))
-        for point in [CGPoint(x: 0.82, y: 0.23), CGPoint(x: 0.98, y: 0.67), CGPoint(x: 0.60, y: 0.90), CGPoint(x: 0.08, y: 0.80), CGPoint(x: 0.04, y: 0.44)] { p.addLine(to: CGPoint(x: point.x * r.width, y: point.y * r.height)) }
-        p.closeSubpath(); return p
-    }
-}
-struct PrintedSilhouette: Shape {
-    func path(in r: CGRect) -> Path {
-        var p = Path(); p.move(to: CGPoint(x: r.width * 0.7, y: 0))
-        p.addCurve(to: CGPoint(x: r.width * 0.65, y: r.height * 0.62), control1: CGPoint(x: -r.width * 0.1, y: 0), control2: CGPoint(x: r.width * 0.8, y: r.height * 0.45))
-        p.addCurve(to: CGPoint(x: r.width * 0.15, y: r.height), control1: CGPoint(x: r.width * 0.55, y: r.height * 0.80), control2: CGPoint(x: r.width * 0.20, y: r.height * 0.85))
-        p.addLine(to: CGPoint(x: r.width, y: r.height)); p.addLine(to: CGPoint(x: r.width, y: 0)); p.closeSubpath(); return p
-    }
-}
-
 struct CardButtonStyle: ButtonStyle {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     func makeBody(configuration: Configuration) -> some View {

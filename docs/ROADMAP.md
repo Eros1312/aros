@@ -7,7 +7,7 @@ La prioridad de la primera versión es permitir que otras personas instalen Aros
 - Recoger pruebas de instalación de colaboradores en Linux, macOS y Windows/WSL.
 - Verificar el despliegue Docker completo y las migraciones sobre PostgreSQL en CI.
 - Mejorar la documentación y los ejemplos de gateways de IA configurados por el operador.
-- Hacer configurables las áreas heredadas de estudio, diseño y 3D.
+- Permitir personalizar los nombres y la organización de los espacios de trabajo.
 - Internacionalizar los textos conservando etiquetas, navegación y accesibilidad.
 - Validar el cliente iOS con Xcode completo y dispositivos antes de ofrecer una distribución nativa.
 - Incorporar pruebas de navegador para los flujos principales y ampliar cobertura de accesibilidad.

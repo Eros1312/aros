@@ -9,15 +9,15 @@ Entorno local: macOS ARM64, Python 3.12.14, Node.js 24.21.0 y pnpm 11.25.0. Los 
 | Comprobación | Resultado |
 | --- | --- |
 | Instalación backend y resolución del lock | Correcta; `pip check` sin conflictos |
-| Suite backend después de correcciones y actualizaciones | **599 pruebas aprobadas**; 6 advertencias de deprecación de dependencias |
-| Migraciones SQLite desde una base nueva y comparación de esquema | Correctas |
+| Suite backend generalizada | **476 pruebas aprobadas**; tras ajustar una condición de migración, **8 pruebas de migración e instalación aprobadas**, incluida una nueva regresión (477 pruebas en la colección final); 6 advertencias de deprecación de dependencias |
+| Migraciones SQLite desde una base nueva y comparación de esquema | Correctas; transición de áreas antiguas verificada con conservación de archivos y referencias |
 | Arranque/demo y ciclo de worker con conexiones de red bloqueadas | Correctos con datos sintéticos |
 | Control de acciones del servidor compartido | Administrador autorizado; otro usuario recibe 403 sin llamada remota |
 | Instalación web con lock y versión fijada de pnpm | Correcta |
 | TypeScript, lógica de flujos y ciclo de voz | Correctos |
-| Regresiones DOM | **24 aprobadas** |
+| Regresiones DOM | **23 aprobadas** |
 | Build estático Next.js 16.3.8 | Correcto |
-| Pruebas de navegador | **18 comprobaciones aprobadas**; cinco rutas a 390, 768 y 1280 px sin desbordamiento horizontal; navegación, formularios, contexto, retención de borrador tras error y foco por teclado |
+| Pruebas de navegador | **19 comprobaciones aprobadas**; seis rutas a 390, 768 y 1280 px; navegación, formularios, creación de enlaces en Recursos, biblioteca y agenda de Eventos |
 | Errores JavaScript/hidratación en esos recorridos | No detectados |
 | Swift: modelos, vistas compartidas, sintaxis iOS y configuración del proyecto | Correctos con Command Line Tools |
 | Cliente URLSession contra API de demo aislada | Autenticación, DTOs, lectura, creación, versión y borrado confirmado correctos |

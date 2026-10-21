@@ -3,10 +3,10 @@ import SwiftUI
 extension Area {
     var tint: Color {
         switch self {
-        case .university: return Color(red: 0.20, green: 0.43, blue: 0.98)
-        case .prisma: return Color(red: 0.95, green: 0.23, blue: 0.35)
+        case .learning: return Color(red: 0.20, green: 0.43, blue: 0.98)
+        case .events: return Color(red: 0.95, green: 0.23, blue: 0.35)
         case .technology: return Color(red: 0.59, green: 0.24, blue: 0.94)
-        case .printing: return Color(red: 0.02, green: 0.65, blue: 0.46)
+        case .resources: return Color(red: 0.02, green: 0.65, blue: 0.46)
         case .server: return Color(red: 0.40, green: 0.45, blue: 0.54)
         case .personal: return Color(red: 0.95, green: 0.55, blue: 0.10)
         }

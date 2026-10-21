@@ -8,7 +8,7 @@ from test_api import client,auth
 def add(rows):
     with SessionLocal() as db:
         owner=db.scalar(select(User).where(User.email=='aros@local'))
-        for title,start,data,extra in rows:db.add(Item(user_id=owner.id,kind='event',area='university',title=title,due_at=start,data=data,**extra))
+        for title,start,data,extra in rows:db.add(Item(user_id=owner.id,kind='event',area='learning',title=title,due_at=start,data=data,**extra))
         db.commit()
 
 @pytest.mark.parametrize('query',['start=2026-12-01&end=2026-12-01','start=2026-12-02&end=2026-12-01','start=2026-12-01&end=2027-02-02','start=bad&end=2026-12-02','start=2026-12-01&end=2026-12-02&zone=Invalid/Zone','start=2026-12-01&end=2026-12-02&zone=../Europe/Madrid'])
@@ -37,12 +37,12 @@ def test_calendar_all_day_dst_and_exclusive_dates(auth):
     assert next(e for e in other['events'] if e['title']=='DST')['start']=='2027-03-28T07:00:00+00:00'
 
 def test_calendar_owner_status_malformed_and_metadata(auth):
-    add([('Exam','2026-12-01T09:00:00Z',{'exam':True,'location':'Aula4'},{'source':'uv-calendar'}),('Lab','2026-12-01T10:00:00Z',{'session_type':'laboratory','event_type':'class','location':'Lab2'},{'source':'manual','is_demo':True}),('Broken','corrupt',{},{}),('Naive','2026-12-01T09:00:00',{},{}),('Done','2026-12-01T11:00:00Z',{}, {'status':'done'}),*[(s,'2026-12-01T09:00:00Z',{}, {'status':s}) for s in ['cancelled','canceled','archived']]])
+    add([('Exam','2026-12-01T09:00:00Z',{'category':'exam','location':'Aula4'},{'source':'manual'}),('Lab','2026-12-01T10:00:00Z',{'session_type':'laboratory','event_type':'class','location':'Lab2'},{'source':'manual','is_demo':True}),('Broken','corrupt',{},{}),('Naive','2026-12-01T09:00:00',{},{}),('Done','2026-12-01T11:00:00Z',{}, {'status':'done'}),*[(s,'2026-12-01T09:00:00Z',{}, {'status':s}) for s in ['cancelled','canceled','archived']]])
     with SessionLocal() as db:
         u=User(email='private-range@local',password_hash='unused');db.add(u);db.flush();db.add(Item(user_id=u.id,kind='event',area='personal',title='Secret',due_at='2026-12-01T10:00:00Z'));db.commit()
     events=auth.get('/api/v1/calendar/range?start=2026-12-01&end=2026-12-02').json()['events']
     assert [e['title'] for e in events]==['Exam','Lab','Done']
-    assert (events[0]['category'],events[0]['location'],events[0]['source'],events[0]['is_demo'])==('exam','Aula4','uv-calendar',False)
+    assert (events[0]['category'],events[0]['location'],events[0]['source'],events[0]['is_demo'])==('exam','Aula4','manual',False)
     assert (events[1]['category'],events[1]['location'],events[1]['is_demo'])==('laboratory','Lab2',True)
     assert len(auth.get('/api/v1/calendar/day?day=2026-12-01').json()['events'])==3
 

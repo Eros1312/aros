@@ -18,7 +18,7 @@ class ExecutionIn(BaseModel):
     model_config=ConfigDict(extra='forbid')
     goal:str=Field(min_length=10,max_length=4000)
     title:str=Field(min_length=1,max_length=160)
-    area:Literal['university','prisma','technology','printing','personal','server']
+    area:Literal['learning','events','technology','resources','personal','server']
     query:str=Field(default='',max_length=160)
     item_ids:list[str]=Field(default_factory=list,max_length=20)
     project_id:str|None=None

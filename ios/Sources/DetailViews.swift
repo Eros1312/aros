@@ -40,7 +40,7 @@ struct AreaDetailView: View {
                         }.padding(20).glass()
                     }
                     VStack(alignment: .leading, spacing: 18) {
-                        Text(area == .prisma ? "Preparativos" : "Tu resumen").font(.headline)
+                        Text(area == .events ? "Preparativos" : "Tu resumen").font(.headline)
                         ForEach(summary.rows) { row in SummaryLine(row: row, tint: area.tint) }
                     }.padding(20).glass()
                     let attention = store.dashboard.attention.filter { $0.area == area && !$0.resolved }
@@ -69,9 +69,9 @@ struct IdeasView: View {
         VStack(spacing: 0) {
             Picker("Área", selection: $area) {
                 Text("IA & Tecnología").tag(Area.technology)
-                Text("Impresión 3D").tag(Area.printing)
+                Text("Recursos").tag(Area.resources)
             }.pickerStyle(.segmented).padding(.horizontal, 20).padding(.top, 12)
-            if store.connected { if area == .printing { PrintingDiscoveryView() } else { ResourceListView(area: area) } } else { AreaDetailView(area: area) }
+            if store.connected { ResourceListView(area: area) } else { AreaDetailView(area: area) }
         }
     }
 }
