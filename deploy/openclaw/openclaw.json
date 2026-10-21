@@ -1,0 +1,267 @@
+{
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "port": 18789,
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN}"
+    },
+    "http": {
+      "endpoints": {
+        "chatCompletions": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "CONFIGURE_EXPLICIT_MODEL",
+        "fallbacks": []
+      },
+      "models": {
+        "CONFIGURE_EXPLICIT_MODEL": {}
+      },
+      "modelPolicy": {
+        "allow": [
+          "CONFIGURE_EXPLICIT_MODEL"
+        ]
+      },
+      "thinkingDefault": "low",
+      "authInheritance": {
+        "agentId": "aros"
+      }
+    },
+    "ownership": "explicit",
+    "entries": {
+      "aros": {
+        "name": "Aros",
+        "workspace": "/home/node/.openclaw/workspaces/aros",
+        "model": {
+          "primary": "CONFIGURE_EXPLICIT_MODEL",
+          "fallbacks": []
+        },
+        "utilityModel": "CONFIGURE_EXPLICIT_MODEL",
+        "decisionModel": "CONFIGURE_EXPLICIT_MODEL",
+        "modelPolicy": {
+          "allow": [
+            "CONFIGURE_EXPLICIT_MODEL"
+          ]
+        },
+        "tools": {
+          "allow": [
+            "aros_resources",
+            "aros_prepare_action"
+          ]
+        }
+      },
+      "university": {
+        "name": "Universidad",
+        "workspace": "/home/node/.openclaw/workspaces/university",
+        "model": {
+          "primary": "CONFIGURE_EXPLICIT_MODEL",
+          "fallbacks": []
+        },
+        "utilityModel": "CONFIGURE_EXPLICIT_MODEL",
+        "decisionModel": "CONFIGURE_EXPLICIT_MODEL",
+        "modelPolicy": {
+          "allow": [
+            "CONFIGURE_EXPLICIT_MODEL"
+          ]
+        },
+        "tools": {
+          "allow": [
+            "aros_resources",
+            "aros_prepare_action"
+          ]
+        }
+      },
+      "prisma": {
+        "name": "PRISMA",
+        "workspace": "/home/node/.openclaw/workspaces/prisma",
+        "model": {
+          "primary": "CONFIGURE_EXPLICIT_MODEL",
+          "fallbacks": []
+        },
+        "utilityModel": "CONFIGURE_EXPLICIT_MODEL",
+        "decisionModel": "CONFIGURE_EXPLICIT_MODEL",
+        "modelPolicy": {
+          "allow": [
+            "CONFIGURE_EXPLICIT_MODEL"
+          ]
+        },
+        "tools": {
+          "allow": [
+            "aros_resources",
+            "aros_prepare_action"
+          ]
+        }
+      },
+      "technology": {
+        "name": "IA y Tecnología",
+        "workspace": "/home/node/.openclaw/workspaces/technology",
+        "model": {
+          "primary": "CONFIGURE_EXPLICIT_MODEL",
+          "fallbacks": []
+        },
+        "utilityModel": "CONFIGURE_EXPLICIT_MODEL",
+        "decisionModel": "CONFIGURE_EXPLICIT_MODEL",
+        "modelPolicy": {
+          "allow": [
+            "CONFIGURE_EXPLICIT_MODEL"
+          ]
+        },
+        "tools": {
+          "allow": [
+            "aros_resources",
+            "aros_prepare_action"
+          ]
+        }
+      },
+      "printing": {
+        "name": "Impresión 3D",
+        "workspace": "/home/node/.openclaw/workspaces/printing",
+        "model": {
+          "primary": "CONFIGURE_EXPLICIT_MODEL",
+          "fallbacks": []
+        },
+        "utilityModel": "CONFIGURE_EXPLICIT_MODEL",
+        "decisionModel": "CONFIGURE_EXPLICIT_MODEL",
+        "modelPolicy": {
+          "allow": [
+            "CONFIGURE_EXPLICIT_MODEL"
+          ]
+        },
+        "tools": {
+          "allow": [
+            "aros_resources",
+            "aros_prepare_action"
+          ]
+        }
+      },
+      "server": {
+        "name": "Servidor",
+        "workspace": "/home/node/.openclaw/workspaces/server",
+        "model": {
+          "primary": "CONFIGURE_EXPLICIT_MODEL",
+          "fallbacks": []
+        },
+        "utilityModel": "CONFIGURE_EXPLICIT_MODEL",
+        "decisionModel": "CONFIGURE_EXPLICIT_MODEL",
+        "modelPolicy": {
+          "allow": [
+            "CONFIGURE_EXPLICIT_MODEL"
+          ]
+        },
+        "tools": {
+          "allow": [
+            "aros_resources",
+            "aros_prepare_action"
+          ]
+        }
+      },
+      "personal": {
+        "name": "Personal",
+        "workspace": "/home/node/.openclaw/workspaces/personal",
+        "model": {
+          "primary": "CONFIGURE_EXPLICIT_MODEL",
+          "fallbacks": []
+        },
+        "utilityModel": "CONFIGURE_EXPLICIT_MODEL",
+        "decisionModel": "CONFIGURE_EXPLICIT_MODEL",
+        "modelPolicy": {
+          "allow": [
+            "CONFIGURE_EXPLICIT_MODEL"
+          ]
+        },
+        "tools": {
+          "allow": [
+            "aros_resources",
+            "aros_prepare_action"
+          ]
+        }
+      },
+      "aros-planner": {
+        "name": "Planificador interno Aros",
+        "workspace": "/home/node/.openclaw/workspaces/aros-planner",
+        "model": {
+          "primary": "CONFIGURE_EXPLICIT_MODEL",
+          "fallbacks": []
+        },
+        "utilityModel": "CONFIGURE_EXPLICIT_MODEL",
+        "decisionModel": "CONFIGURE_EXPLICIT_MODEL",
+        "modelPolicy": {
+          "allow": [
+            "CONFIGURE_EXPLICIT_MODEL"
+          ]
+        },
+        "tools": {
+          "allow": [
+            "session_status"
+          ]
+        },
+        "skills": []
+      }
+    }
+  },
+  "tools": {
+    "deny": [],
+    "elevated": {
+      "enabled": false
+    },
+    "allow": [
+      "aros_resources",
+      "aros_prepare_action",
+      "session_status"
+    ]
+  },
+  "plugins": {
+    "entries": {
+      "memory-core": {
+        "enabled": false
+      },
+      "admin-http-rpc": {
+        "enabled": true
+      },
+      "whatsapp": {
+        "enabled": false
+      },
+      "aros-tools": {
+        "enabled": true
+      }
+    },
+    "slots": {
+      "memory": "none"
+    },
+    "load": {
+      "paths": [
+        "/home/node/aros-tools",
+        "/usr/local/lib/node_modules/@openclaw/whatsapp"
+      ]
+    }
+  },
+  "channels": {
+    "whatsapp": {
+      "enabled": false,
+      "dmPolicy": "allowlist",
+      "allowFrom": [],
+      "selfChatMode": true,
+      "groupPolicy": "disabled",
+      "sendReadReceipts": false
+    }
+  },
+  "bindings": [
+    {
+      "agentId": "aros",
+      "match": {
+        "channel": "whatsapp",
+        "accountId": "default"
+      }
+    }
+  ],
+  "session": {
+    "dmScope": "per-channel-peer"
+  }
+}

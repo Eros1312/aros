@@ -1,0 +1,10 @@
+'use client';
+import {useState,useEffect} from 'react';
+import {api,json} from '../lib/api';
+type Setup={configured:boolean;redirect_uri:string;origin:string;detail:string};
+export default function GoogleSetup(){
+ const[state,setState]=useState<Setup|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ useEffect(()=>{void api<Setup>('/google/application').then(setState).catch(e=>setError(e.message))},[]);
+ async function upload(file:File|undefined){if(!file)return;setBusy(true);setError('');try{if(file.size>20000)throw new Error('El JSON supera el tamaño permitido');setState(await api<Setup>('/google/application',json('POST',{credentials_json:await file.text()})))}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
+ return <section className="setting-panel"><h2>Google · Gmail y Calendar</h2><p>{state?.configured?'Aplicación OAuth preparada. Usa Conectar en Gmail y Google Calendar para autorizar tu cuenta.':'Necesitas una aplicación OAuth de Google para vincular tu cuenta a este servidor.'}</p>{!state?.configured&&<><ol><li>En <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer">Google Cloud</a>, crea un proyecto separado llamado Aros y habilita solo Gmail API y Google Calendar API (Drive API si lo quieres). Esto no conecta Gemini ni cambia el modelo de IA de Aros.</li><li>Configura la pantalla de consentimiento y añade tu dirección como usuario de prueba.</li><li>Crea un cliente OAuth de tipo «Aplicación web», añade el origen y la URL de retorno indicados y descarga su JSON.</li></ol><p><strong>Origen:</strong> <code>{state?.origin}</code></p><p><strong>URL de retorno:</strong> <code style={{overflowWrap:'anywhere'}}>{state?.redirect_uri}</code></p><label className="field">Cargar JSON OAuth de Google<input type="file" accept="application/json,.json" disabled={busy} onChange={e=>{void upload(e.target.files?.[0]);e.target.value=''}}/></label><p className="muted">El secreto se guarda cifrado en tu servidor y no se entrega a los agentes.</p></>}{state?.detail&&<p className="muted">{state.detail}</p>}{error&&<p role="alert">{error}</p>}</section>
+}

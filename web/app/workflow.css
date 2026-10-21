@@ -1,0 +1,155 @@
+/* Shared workflow hierarchy: content first, secondary configuration on demand. */
+.reference-app {--workflow-muted:#566176}
+.reference-app .topbar {height:64px}
+.reference-app .sidebar {display:flex;flex-direction:column;overflow:hidden}
+.reference-app .nav {flex:0 0 auto}
+.reference-app .sidebar-quick {min-height:0;overflow-y:auto;margin-top:14px;padding-top:14px}
+.reference-app .sidebar-bottom {flex:0 0 auto;margin-top:auto}
+.reference-app .sidebar-bottom .text-button {min-height:44px}
+.reference-app .sidebar-bottom .profile {margin-top:8px}
+.reference-app .nav button,.reference-app .sidebar-quick button {min-height:44px}
+.reference-app .page-heading h1,.agents-page-header h1 {font-size:clamp(1.65rem,2.5vw,2rem);line-height:1.15;letter-spacing:-.035em;overflow-wrap:anywhere}
+.reference-app .page-heading {margin-bottom:22px}
+.reference-app .page-heading p {line-height:1.5}
+.reference-app button,.reference-app a,.reference-app summary {touch-action:manipulation}
+.reference-app button:active,.reference-app .primary:active,.reference-app .secondary:active {filter:brightness(.96)}
+.reference-app :is(button,a,input,textarea,select,summary):focus-visible {outline:3px solid #246ce8;outline-offset:3px}
+.reference-app .chat-input textarea:focus-visible {outline:2px solid #246ce8;outline-offset:1px;border-radius:8px}
+.workspace-today .page-heading h1 {display:flex;align-items:center;gap:12px}
+.workspace-today .page-heading h1:before {content:'';width:32px;height:32px;flex:0 0 auto;border-radius:50%;background:radial-gradient(circle at 23% 22%,#e9faff,#71cefb 25%,#b89aeb 62%,#f7b0cf 95%);box-shadow:inset 0 0 10px #fff6}
+.workspace-today .today-priorities {padding-top:18px;padding-bottom:18px;margin-bottom:18px}
+.workspace-today .today-priorities .quiet-empty {padding:8px 0;text-align:left;display:grid;grid-template-columns:auto 1fr;column-gap:12px;row-gap:5px;align-items:center}
+.workspace-today .today-priorities .quiet-empty>svg {grid-row:1/4;color:#3a805f}
+.workspace-today .today-priorities .quiet-empty>h3 {margin:0;font-size:16px}
+.workspace-today .today-priorities .quiet-empty>p,.workspace-today .today-priorities .quiet-empty>button {grid-column:2;margin:0;justify-self:start}
+.workspace-today .today-priorities .quiet-empty>button {padding:4px 0}
+.reference-home:has(.ref-spaces-heading) {padding-top:14px}
+.ref-spaces-heading {margin-bottom:16px;gap:16px}
+.ref-spaces-heading h2 {font-size:20px;letter-spacing:-.025em}
+.ref-spaces-heading .status-note {margin:0}
+.reference-home:has(.ref-spaces-heading):before {top:0;opacity:.55}
+.reference-home:has(.ref-spaces-heading) .ref-space-card {min-height:230px}
+.optional-feature {border:1px solid #e1e7f0;border-radius:16px;background:#ffffffc4;margin:18px 0 24px;padding:0 18px}
+.optional-feature>summary {display:flex;align-items:center;gap:10px;min-height:52px;cursor:pointer;color:var(--ink);font-size:14px;font-weight:600;flex-wrap:wrap;padding:8px 0}
+.optional-feature>summary:after {content:'+';margin-left:auto;color:#53617b;font-size:19px;font-weight:400}
+.optional-feature[open]>summary:after {content:'−'}
+.optional-feature>summary>span {color:var(--workflow-muted);font-size:12px;font-weight:400}
+.optional-feature>summary::-webkit-details-marker {display:none}
+.optional-feature .setting-panel {max-width:100%;box-shadow:none;margin-bottom:18px}
+.university-sources {margin:12px 0 18px}
+.university-sources .status-note {margin:8px 0 16px}
+.assistant-context {display:grid;grid-template-columns:1fr auto;gap:0 8px;border:1px solid #dce4f4;border-radius:16px;background:#f1f5ff;padding:10px 12px;margin-bottom:10px;min-width:0}
+.context-resource {display:flex;align-items:center;gap:10px;text-align:left;min-height:44px;min-width:0}
+.context-resource>span {flex:1;min-width:0}
+.context-resource strong {display:block;font-size:14px;font-weight:600;overflow-wrap:anywhere;line-height:1.45}
+.context-resource small {display:block;font-size:12px;color:#4f5d77;line-height:1.5}
+.context-resource>svg {color:#4270bd;flex-shrink:0}
+.assistant-context>p {grid-column:1/-1;margin:8px 0 0;color:#4f5d77;font-size:12px;line-height:1.5}
+.assistant-voice {margin:14px 0;color:var(--workflow-muted)}
+.assistant-voice>summary {display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;font-size:13px}
+.assistant-voice .voice-conversation {margin-top:8px}
+.project-back {margin-bottom:12px}
+.project-detail .page-heading {align-items:flex-start}
+.project-detail .page-heading p {white-space:pre-wrap;max-width:720px}
+.project-status-strip {display:flex;align-items:center;gap:12px 18px;flex-wrap:wrap;padding:14px 18px;border:1px solid #e1e7f0;border-radius:16px;background:#ffffffb8;font-size:13px;color:var(--workflow-muted);margin-bottom:20px}
+.project-status-strip .text-button {margin-left:auto}
+.project-work-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}
+.project-work-grid .panel {min-width:0}
+.project-work-grid .continuity-row strong {display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.project-work-grid .quiet-empty {text-align:left}
+.history-context {margin:8px 0 0;white-space:normal;display:flex;gap:8px;flex-wrap:wrap}
+.history-context button {text-align:left;font-size:12px;line-height:1.5;padding:8px 10px;border-radius:10px;background:#fff9;border:1px solid #d4dfee;min-height:44px;max-width:100%;overflow-wrap:anywhere}
+.history-context small {display:block;color:#4f5d77}
+@media(max-width:900px){
+ .reference-today .topbar {display:flex}
+ .reference-today .main {padding-top:24px}
+ .reference-app .sidebar {padding-bottom:12px}
+ .reference-app .sidebar.open {display:flex}
+ .reference-app .mobile-tabs button span {font-size:10px}
+}
+@media(max-width:700px){
+ .reference-app .page-heading>.primary {max-width:155px}
+ .optional-feature>summary>span {flex-basis:100%;padding-left:27px;line-height:1.5}
+ .optional-feature>summary:after {position:absolute;right:14px;top:13px}
+ .optional-feature {position:relative;padding:0 14px}
+ .project-work-grid {grid-template-columns:1fr}
+ .project-status-strip {padding:12px 14px;gap:8px 12px}
+ .project-status-strip .text-button {margin-left:0}
+ .ref-spaces-heading {align-items:flex-start;flex-direction:column;gap:4px}
+ .assistant-context {padding:9px 10px}
+ .assistant-context .icon-button {align-self:start}
+ .context-resource>svg:last-child {display:none}
+ .reference-home:has(.ref-spaces-heading) .ref-space-card {min-height:215px}
+}
+@media(prefers-reduced-transparency:reduce){.assistant-context,.optional-feature,.project-status-strip {background:#fff}.reference-home:has(.ref-spaces-heading):before {display:none}}
+@media(prefers-contrast:more){.assistant-context,.optional-feature,.project-status-strip {background:#fff;border-color:#657087}.context-resource small,.assistant-context>p,.history-context small {color:#263650}}
+
+/* A bright workspace: the six spaces lead, current work follows. */
+body{background:#fafbfe}
+.reference-app .sidebar{background:#f7f8fb;border-right:1px solid #e8ebf1}
+.reference-app .topbar{background:#ffffffed;border-bottom:1px solid #eef0f5}
+.reference-app .panel,.reference-app .setting-panel,.reference-app .record-list,.reference-app .connection{background:#fff;border:1px solid #e8ecf3;box-shadow:0 3px 14px #233c6903}
+.reference-home:before{background:radial-gradient(ellipse at 85% 8%,#e9eeff77,transparent 43%),radial-gradient(ellipse at 6% 65%,#f3eaff55,transparent 40%);opacity:.7}
+.reference-home h1{font-size:24px;line-height:1.2;letter-spacing:-.7px}
+.reference-home h1>strong{font-size:48px;letter-spacing:-1.8px}
+.ref-home-header{margin-bottom:20px}
+.ref-date-row{margin-bottom:8px}
+.ref-header-actions{padding-top:12px}
+.ref-space-card{min-height:236px;background:linear-gradient(145deg,#fff 58%,color-mix(in srgb,var(--ref-tint),white 85%));border:1px solid #e7ebf3;box-shadow:0 4px 14px #42537805}
+.ref-context-strip{background:#fff;border-color:#e8ecf3}
+.ref-assistant-bar{background:#fff;border-color:#e1e6f0}
+.reference-app .status-note,.reference-app .empty-copy{color:#566176;line-height:1.6}
+.today-embedded{max-width:1100px;margin:16px auto 0;padding-top:22px;border-top:1px solid #e3e8f1;scroll-margin-top:82px}
+.today-embedded>.page-heading h2{font-size:24px;letter-spacing:-.6px;margin:0}
+.today-embedded>.page-heading p{font-size:13px;margin-top:7px}
+.today-embedded .panel{box-shadow:none}
+.today-embedded .today-priorities{border-radius:18px}
+.project-material{border-bottom:1px solid #e9edf4;padding-bottom:4px}
+.project-material:last-child{border-bottom:0}
+.project-material>.continuity-row{border-bottom:0}
+.project-material>.text-button{margin-left:28px;min-height:44px}
+.project-work-grid .section-title{gap:12px;flex-wrap:wrap}
+.project-work-grid .section-title .secondary{font-size:12px;padding:8px 10px}
+.context-project{padding-bottom:8px}
+.context-project~.context-resource{padding-top:8px;border-top:1px solid #d8e1f1}
+.assistant-context .icon-button{min-width:44px;min-height:44px}
+.assistant-context .context-resource{background:none;border:0}
+.reference-app .upload-label{position:relative;min-height:44px;min-width:44px}
+.reference-app .upload-label input{display:block;position:absolute;inset:0;opacity:0;width:100%;min-width:0;max-width:100%;height:100%;cursor:pointer}
+.reference-app .upload-label:focus-within{outline:3px solid #246ce8;outline-offset:3px}
+.reference-app .assistant-attach{display:grid;place-items:center}
+.reference-app .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.reference-app .source-links button,.reference-app .text-button,.reference-app .icon-button{min-height:44px}
+.reference-app .breadcrumb{min-width:0}
+.reference-app .breadcrumb strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40vw}
+.reference-app [inert]{pointer-events:none}
+.modal[inert]{visibility:hidden}
+.conversation-usage p{font-size:12px;line-height:1.5;color:#566176}
+.conversation-usage li{display:flex;flex-direction:column;gap:4px;margin:10px 0;overflow-wrap:anywhere}
+.conversation-usage li small,.conversation-usage li span{font-size:12px;line-height:1.5}
+.conversation-print-jobs{display:grid;gap:10px;margin:14px 0}
+.conversation-print-jobs article{padding:13px;background:#fff;border:1px solid #dfe7e1;border-radius:13px}
+.conversation-print-jobs article>div{display:flex;align-items:center;gap:9px}
+.conversation-print-jobs strong,.conversation-print-jobs small{display:block;line-height:1.5}
+.conversation-print-jobs small{font-size:12px;color:#536176}
+.conversation-print-jobs p{font-size:13px;line-height:1.5;margin:8px 0}
+.conversation-print-jobs a{display:inline-flex;align-items:center;gap:7px;min-height:44px;text-decoration:none;margin-bottom:5px}
+.print-header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#printing-organizer{scroll-margin-top:82px;outline-offset:5px}
+@media(max-width:700px){
+ .reference-home h1{font-size:21px}.reference-home h1>strong{font-size:42px}
+ .ref-header-actions{padding-top:20px}.ref-date{font-size:13px}
+ .ref-space-card{min-height:220px}.ref-card-heading h2{font-size:16px}
+ .today-embedded{margin-top:10px;padding-top:22px}.today-embedded>.page-heading h2{font-size:22px}
+ .reference-app .chat-shell .page-heading{gap:12px;flex-wrap:wrap}
+ .reference-app .chat-shell .page-heading>.text-button{padding-left:0}
+ .reference-app .modal{max-height:calc(100dvh - 24px);border-radius:22px}
+ .reference-app .modal-head{padding:18px}.reference-app .modal-body{padding:18px}
+ .reference-app .top-actions .round,.reference-app .top-actions .avatar{min-width:44px;min-height:44px}
+}
+@media(prefers-reduced-transparency:reduce){body{background:#fff}.ref-space-card,.ref-context-strip,.ref-assistant-bar{background:#fff}.reference-home:before{display:none}}
+@media(max-width:560px){
+ .reference-app .project-detail .page-heading{flex-direction:column;align-items:stretch;gap:16px}
+ .reference-app .project-detail .page-heading>.primary{max-width:none;width:100%;min-height:44px;justify-content:center}
+ .print-header-actions{width:100%;gap:8px}.print-header-actions .print-button{flex:1;justify-content:center;min-height:44px}
+}

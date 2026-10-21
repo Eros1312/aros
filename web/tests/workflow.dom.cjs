@@ -1,0 +1,97 @@
+/* Fixture-only React DOM integration checks. Does not launch a browser or model.
+   AROS_DOM_MODULE=/path/to/jsdom NODE_PATH=web/node_modules node tests/workflow.dom.cjs /tmp/compiled
+   JSDOM checks semantics/state only; it cannot validate pixels, layout or contrast.
+*/
+const assert=require('node:assert/strict');
+const {JSDOM}=require(process.env.AROS_DOM_MODULE||'jsdom');
+const path=require('node:path');
+const dom=new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',{url:'http://localhost/#today',pretendToBeVisual:true});
+for(const name of ['window','document','HTMLElement','Element','HTMLDialogElement','Event','KeyboardEvent','MouseEvent','CustomEvent','Node','AbortController','FormData'])global[name]=dom.window[name];
+Object.defineProperty(global,'navigator',{value:dom.window.navigator,configurable:true});
+global.history=dom.window.history;global.sessionStorage=dom.window.sessionStorage;global.localStorage=dom.window.localStorage;
+global.requestAnimationFrame=callback=>setTimeout(callback,0);global.cancelAnimationFrame=clearTimeout;window.scrollTo=()=>{};window.matchMedia=()=>({matches:true});HTMLElement.prototype.scrollIntoView=()=>{};
+Object.defineProperty(HTMLElement.prototype,'offsetParent',{get(){return this.parentElement}});
+HTMLDialogElement.prototype.showModal=function(){this.open=true};HTMLDialogElement.prototype.close=function(){this.open=false};
+global.IS_REACT_ACT_ENVIRONMENT=true;require.extensions['.css']=()=>{};
+const React=require('react'),{act}=React,{createRoot}=require('react-dom/client');
+const Aros=require(path.join(process.argv[2],'app/page.js')).default;
+const now='2026-10-03T07:00:00Z';
+const base={description:'Datos sintéticos para una prueba local.',status:'active',priority:'normal',due_at:null,data:{},source:'demo',is_demo:true,version:3,created_at:now,updated_at:now};
+const project={...base,id:'project-fixture-123456',kind:'project',area:'prisma',title:'Proyecto de prueba'};
+const project2={...project,id:'project-second-123456',title:'Segundo proyecto de prueba'};
+const file={...base,id:'file-fixture-123456',kind:'document',area:'prisma',title:'Documento de prueba',data:{project_id:project.id}};
+const task={...base,id:'task-fixture-123456',kind:'task',area:'prisma',title:'Revisar muestra',status:'pending',data:{project_id:project.id}};
+const archive={...file,id:'archive-fixture-123456',area:'university',status:'archived',title:'Documento archivado de prueba'};
+const university={...file,id:'university-fixture-123456',area:'university',title:'Apuntes de prueba',data:{}};
+const job={id:'job-fixture-123456',agent_id:'aros',thread_id:'chat',status:'completed',prompt:'Revisa el material',reply:'Resultado de prueba comprobado.',error:'',created_at:now,execution:{capability:'conversation.integrated',state:'completed',state_version:1,steps:[],artifacts:[{id:task.id,title:task.title,version:task.version,area:task.area,kind:task.kind,verified:true}]},context_sources:[{id:file.id,title:file.title,version:file.version,source:file.source,selected:true}]};
+let denyFile=false,denyProject=false,summaryError=false,posts=[],uploads=[],items=[project,project2,file,task,archive,university],chat=[{id:'message-fixture-1',job_id:job.id,role:'user',text:job.prompt,mode:'integrated',created_at:now,context_sources:job.context_sources},{id:'message-fixture-2',job_id:job.id,role:'assistant',text:job.reply,mode:'integrated',created_at:now}];
+const summary={generated_at:now,timezone:'Europe/Madrid',priorities:[],projects:[{id:project.id,title:project.title,href:'#projects/'+project.id,next_action:'Continuar proyecto'}],events:[],coverage:[],attention:{actionable_count:0,excluded_non_actionable_count:0},results:[{id:task.id,title:task.title,area:task.area,created_at:now,artifact_id:task.id,job_id:job.id,section:'chat'}]};
+function response(data,status=200){return {ok:status<400,status,json:async()=>data}}
+global.fetch=window.fetch=async(raw,options={})=>{
+ const url=new URL(raw,'http://localhost'),route=url.pathname.replace('/api/v1','');
+ if(options.signal?.aborted)throw new DOMException('Aborted','AbortError');
+ if(options.method==='POST'&&route==='/chat'){posts.push(JSON.parse(options.body));return response({detail:'Fallo de prueba sin modelo externo'},503)}
+ if(route==='/documents/upload'&&options.method==='POST'){uploads.push(options.body);const saved={...file,id:'uploaded-fixture-123456',title:'Adjunto de prueba.pdf',data:{project_id:options.body.get('project_id')}};items.push(saved);return response(saved,201)}
+ if(route==='/me')return response({id:'demo-user-fixture',email:'fixture@example.invalid',ai_consent:false,demo:true});
+ if(route==='/dashboard')return response({demo:true,attention:[],counts:{tasks:1,documents:3},events:[],summaries:[]});
+ if(route==='/items')return response(items);
+ if(route.startsWith('/items/')){const id=route.split('/').pop();if(id===file.id&&denyFile)return response({detail:'Fuente revocada de prueba'},403);return response(items.find(item=>item.id===id)||{detail:'No disponible'},items.some(item=>item.id===id)?200:404)}
+ if(route==='/workspace/summary')return summaryError?response({detail:'Fuente temporalmente no disponible'},503):response(summary);
+ if(route==='/workspace/projects/'+project2.id)return response({project:project2,resources:[],tasks:[],results:[],conversations:[],links:{resources_total:0,tasks_total:0,results_total:0,conversations_total:0,limit:100,truncated:false},generated_at:now,timezone:'Europe/Madrid'});
+ if(route==='/workspace/projects/'+project.id)return denyProject?response({detail:'Proyecto revocado de prueba'},403):response({project,resources:[file],tasks:[task],results:summary.results,conversations:[job],links:{resources_total:1,tasks_total:1,results_total:1,conversations_total:1,limit:100,truncated:false},generated_at:now,timezone:'Europe/Madrid'});
+ if(route==='/chat')return response(url.searchParams.get('project_id')===project2.id?[]:chat);
+ if(route==='/agents/runs')return response(url.searchParams.get('thread_id')===project2.id?[]:[job]);
+ if(route==='/agents/runs/'+job.id)return response(job);
+ if(route==='/openclaw/channels')return response({whatsapp:{connected:false,linked:false,detail:'No conectado en fixture'},policy:'Prueba sin canales externos',other_channels:[]});
+ if(route==='/agents')return response({reachable:false,detail:'Fixture sin motor externo',model:'No conectado',agents:[]});
+ if(route==='/agents/runtime')return response({workers:[],queue:{interactive:0,review:0,running:0},agents:[],checked_at:now});
+ if(route==='/printing/recommendations')return response({items:[],status:{total:0,enabled:false},profile:{}});
+ if(route==='/github-releases')return response({enabled:false,connected:false,running:false,queued:false,outcome:'never',error:null,last_successful_sync_at:null,next_refresh:null,sources:[]});
+ if(route==='/printing/generation/capabilities')return response({engine:'fixture',available:false,detail:'Sin generación de imágenes en fixture',parametric:{available:true,worker_state:'unknown',limits:{max_pending:3,max_daily:20,max_saved:200}}});
+ if(route==='/printing/generation/jobs')return response({items:[],worker_state:'unknown'});
+ if(route==='/printing/generator/status')return response({available:false,configured:false,detail:'Motor de prueba no conectado'});
+ if(route==='/calendar/university/status')return response({configured:false,count:0,last_sync:null,source_url:null,group:'Grupo de prueba',academic_year:'2026/27',read_only:true});
+ if(route==='/server')return response({services:[],cpu_percent:0,ram_used:0,ram_total:0,disk_used:0,disk_total:0,scope:'demo'});
+ if(route==='/workspace/library')return response({items:[],groups:[],pagination:{offset:0,limit:50,total:0,next_offset:null}});
+ return response([]);
+};
+let root=createRoot(document.getElementById('root'));
+const wait=async()=>{await act(async()=>{await new Promise(resolve=>setTimeout(resolve,30))})};
+const buttons=()=>Array.from(document.querySelectorAll('button'));
+const button=text=>{const result=buttons().find(el=>el.textContent.trim()===text||el.getAttribute('aria-label')===text);assert.ok(result,'Missing button '+text);return result};
+const click=async el=>{await act(async()=>{el.focus();el.dispatchEvent(new MouseEvent('click',{bubbles:true}))});await wait()};
+const go=async route=>{await act(async()=>{history.pushState(null,'','#'+route);window.dispatchEvent(new Event('hashchange'))});await wait()};
+const textInput=async(el,value)=>{const setter=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el),'value').set;await act(async()=>{setter.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}))});await wait()};
+const remount=async()=>{await act(async()=>root.unmount());root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Aros)));await wait()};
+let checks=0;const pass=label=>{checks++;console.log('PASS '+label)};
+(async()=>{
+ try{
+  await act(async()=>root.render(React.createElement(Aros)));await wait();
+  assert.equal(document.querySelectorAll('h1').length,1);assert.ok(document.querySelector('h1').textContent.includes('Aros.'));assert.equal(document.querySelectorAll('.nav button').length,5);assert.equal(document.querySelectorAll('.ref-space-card').length,6);assert.ok(document.querySelector('.ref-card-grid').compareDocumentPosition(document.querySelector('#today-summary'))&Node.DOCUMENT_POSITION_FOLLOWING);assert.ok(document.querySelector('.source-notice a[href="https://github.com/Eros1312/aros"]'));pass('One home heading, six reference cards, five primary routes and source link');
+  await click(Array.from(document.querySelectorAll('.workspace-today button')).find(el=>el.textContent.includes(project.title)));assert.ok(document.querySelector('.project-detail'));pass('Today project button uses parsed nested navigation');
+  await go('overview');assert.equal(window.location.hash,'#today');pass('Legacy Today route canonicalizes without duplicated page');
+  await go('projects/'+project.id);assert.ok(document.querySelector('.project-detail'));assert.ok(document.body.textContent.includes('Material del proyecto'));assert.ok(document.body.textContent.includes(file.title));await remount();assert.ok(document.querySelector('.project-detail'));pass('Project deep link restores after authenticated initial load and remount');
+  await click(button('Añadir tarea'));assert.ok(document.querySelector('[role=dialog]').textContent.includes('Se vinculará a'));assert.ok(Array.from(document.querySelectorAll('[role=dialog] select')).some(select=>select.disabled&&select.value===project.area));await click(button('Cancelar'));pass('Manual task creation visibly links to project and area');
+  const resourceTrigger=Array.from(document.querySelectorAll('.project-work-grid button')).find(el=>el.textContent.includes(file.title));await click(resourceTrigger);await act(async()=>document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})));assert.equal(document.querySelector('[role=dialog]'),null);assert.equal(document.activeElement,resourceTrigger);pass('Resource modal Escape handler restores source-trigger focus');await click(resourceTrigger);await click(button('Preguntar a Aros'));
+  const selected=document.querySelector('.assistant-context');assert.ok(selected&&selected.textContent.includes(file.title)&&selected.textContent.includes('versión 3'));assert.ok(document.querySelector('textarea').value.includes('Ayúdame'));pass('Resource ask opens draft with exact visible ID/version/source context');await remount();assert.ok(document.querySelector('.assistant-context')?.textContent.includes(file.title));pass('Selected context restores after remount using current authorized resource');
+  await textInput(document.querySelector('textarea'),'Resume el material');await click(button('Enviar mensaje'));assert.deepEqual(posts[0].item_ids,[file.id]);assert.equal(posts[0].area,file.area);assert.equal(posts[0].project_id,project.id);assert.equal(posts[0].thread_id,project.id);assert.equal(document.querySelector('textarea').value,'Resume el material');pass('Exact selected IDs submitted; failed request preserves draft');
+  await go('library');await go('chat');assert.ok(document.querySelector('.assistant-context')?.textContent.includes(file.title));pass('Selected context survives navigation between library and assistant');
+  await click(button('Quitar recurso del contexto'));assert.ok(document.querySelector('.assistant-context')?.textContent.includes(project.title));assert.equal(document.querySelector('.assistant-context')?.textContent.includes(file.title),false);assert.equal(JSON.parse(sessionStorage.getItem('aros:chat-scope:v2:demo-user-fixture')).itemId,null);pass('Removing resource retains only explicit project ficha and clears persisted resource ID');
+  await click(button('Salir del contexto del proyecto'));assert.equal(document.querySelector('.assistant-context'),null);assert.equal(sessionStorage.getItem('aros:chat-scope:v2:demo-user-fixture'),null);pass('Leaving project returns to general scope with no selected IDs');
+  await go('projects/'+project.id);await click(button('Trabajar con Aros'));await textInput(document.querySelector('textarea'),'Borrador solo del primer proyecto');await go('projects/'+project2.id);await click(button('Trabajar con Aros'));assert.ok(document.querySelector('.assistant-context')?.textContent.includes(project2.title));assert.equal(document.querySelector('textarea').value.includes('Borrador solo'),false);assert.equal(document.body.textContent.includes(job.reply),false);pass('Switching projects discards prior draft and loads isolated history');
+  await go('projects/'+project.id);const fileInput=document.querySelector('input[aria-label="Añadir archivo al proyecto"]');Object.defineProperty(fileInput,'files',{value:[new dom.window.File(['fixture'],'Adjunto de prueba.pdf',{type:'application/pdf'})],configurable:true});await act(async()=>fileInput.dispatchEvent(new Event('change',{bubbles:true})));await wait();assert.equal(uploads.at(-1).get('project_id'),project.id);assert.equal(uploads.at(-1).get('area'),project.area);assert.ok(document.querySelector('.assistant-context').textContent.includes('Adjunto de prueba.pdf'));pass('Project upload stays in project area and selects only returned attachment');
+  await go('projects/'+project.id);await click(Array.from(document.querySelectorAll('.project-work-grid button')).find(el=>el.textContent.includes(file.title)));await click(button('Preguntar a Aros'));denyFile=true;await click(button('Actualizar datos'));assert.equal(document.querySelector('.assistant-context'),null);pass('Revoked resource is removed from active context');job.resources_unavailable=true;job.execution.resources_unavailable=true;await click(button('Actualizar datos'));assert.equal(document.querySelectorAll('.history-context button').length,0);pass('Revoked job context does not display selected-source history chips');
+  await go('university');assert.ok(document.body.textContent.includes(university.title));assert.equal(document.body.textContent.includes(archive.title),false);assert.equal(document.querySelector('.university-sources').open,false);pass('University saved content first; archive excluded; settings collapsed');
+  await go('printing');assert.ok(document.body.textContent.includes('Impresión 3D'));await click(button('Crear un organizador'));assert.equal(document.activeElement.id,'printing-organizer');pass('3D generator can be reached directly from collection header with keyboard focus');
+  await go('agents');assert.equal(document.querySelectorAll('.agent-inspector[open]').length,0);pass('Specialist chat hides infrastructure behind inspectors');
+  await go('today');await click(button('Abrir navegación'));assert.ok(document.querySelector('.sidebar.open'));assert.equal(document.querySelector('.mobile-tabs').hasAttribute('inert'),true);const sidebarButtons=Array.from(document.querySelectorAll('.sidebar button:not(:disabled), .sidebar a[href]'));sidebarButtons[0].focus();await act(async()=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',shiftKey:true,bubbles:true,cancelable:true})));assert.equal(document.activeElement,sidebarButtons[sidebarButtons.length-1]);await act(async()=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})));assert.equal(document.querySelector('.sidebar.open'),null);pass('Drawer state and keyboard trap/dismissal handlers');
+  summaryError=true;await go('library');await go('today');assert.ok(document.querySelector('[role=alert]').textContent.includes('No se pudo comprobar el resumen'));pass('Unverified summary failure offers retry without inventing priorities');
+  summaryError=false;await go('projects/'+project.id);denyProject=true;await click(button('Actualizar datos'));assert.equal(document.querySelector('.project-work-grid'),null);assert.equal(button('Trabajar con Aros').disabled,true);pass('Revoked project hides linked data and disables work actions');
+  denyProject=false;denyFile=false;job.resources_unavailable=false;job.execution.resources_unavailable=false;
+  job.execution.usage={calls:[{decision:1,prompt_tokens:100,completion_tokens:10,total_tokens:110,reported:true},{decision:1,prompt_tokens:120,total_tokens:140,reported:true},{decision:2,completion_tokens:7,reported:true},{decision:3,total_tokens:999,reported:false}]};
+  job.execution.artifacts[0].effect='unchanged';job.context_sources=[...job.context_sources,{id:task.id,title:task.title,version:task.version,inherited:true,selected:false}];chat[0].context_sources=job.context_sources;
+  await go('chat');await click(button('Actualizar datos'));const usage=document.querySelector('.conversation-usage');assert.ok(usage);assert.equal(usage.open,false);assert.ok(usage.querySelector('summary').textContent.includes('2 decisiones'));assert.equal(usage.querySelectorAll('li').length,2);assert.ok(usage.textContent.includes('Entrada: 120 tokens'));assert.equal(usage.textContent.includes('110 tokens'),false);assert.equal(usage.textContent.includes('999'),false);assert.ok(document.body.textContent.includes('Ya estaba en el estado solicitado'));assert.ok(document.body.textContent.includes('Resultado anterior de este proyecto'));pass('Usage keeps latest reported decision fields, no-op effects and inherited results remain distinguishable');
+  job.execution.queued_jobs=[{id:'organizer-fixture-123456',title:'Organizador de prueba',state:'queued'}];await click(button('Actualizar datos'));assert.ok(document.querySelector('.conversation-print-jobs').textContent.includes('Encargo guardado · en cola'));assert.equal(document.querySelector('.conversation-print-jobs a[download]'),null);job.execution.queued_jobs[0]={...job.execution.queued_jobs[0],state:'verified',evidence:{watertight:true,sha256:'fixture'},download_url:'/api/v1/printing/generation/jobs/organizer-fixture-123456/file'};await click(button('Actualizar datos'));assert.ok(document.querySelector('.conversation-print-jobs a[download]'));pass('Queued organizer shows acceptance and only verified geometry exposes STL download');
+  console.log('React DOM fixture checks passed: '+checks+'. Layout/contrast/screenshots require browser QA separately.');
+ }finally{await act(async()=>root.unmount());dom.window.close()}
+})().catch(error=>{console.error(error);process.exitCode=1});

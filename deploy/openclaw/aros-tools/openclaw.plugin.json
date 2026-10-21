@@ -1,0 +1,1 @@
+{"id":"aros-tools","name":"Aros Resources","description":"Read Aros resources and prepare reviewable actions from your own WhatsApp chat.","activation":{"onStartup":true},"contracts":{"tools":["aros_resources","aros_prepare_action"]},"configSchema":{"type":"object","properties":{},"additionalProperties":false}}

@@ -1,0 +1,21 @@
+{
+  "name": "Planificador interno Aros",
+  "workspace": "/home/node/.openclaw/workspaces/aros-planner",
+  "model": {
+    "primary": "CONFIGURE_EXPLICIT_MODEL",
+    "fallbacks": []
+  },
+  "utilityModel": "CONFIGURE_EXPLICIT_MODEL",
+  "decisionModel": "CONFIGURE_EXPLICIT_MODEL",
+  "modelPolicy": {
+    "allow": [
+      "CONFIGURE_EXPLICIT_MODEL"
+    ]
+  },
+  "tools": {
+    "allow": [
+      "session_status"
+    ]
+  },
+  "skills": []
+}

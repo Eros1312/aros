@@ -1,0 +1,3 @@
+# Pin the patched transitive parser until the upstream range advances.
+overrides:
+  source-map-js: 1.2.2

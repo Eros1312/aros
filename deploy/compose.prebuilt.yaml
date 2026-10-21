@@ -1,0 +1,13 @@
+services:
+  api:
+    build:
+      dockerfile: backend/Dockerfile.prebuilt
+  worker:
+    build:
+      dockerfile: backend/Dockerfile.prebuilt
+  agent_worker:
+    build:
+      dockerfile: backend/Dockerfile.prebuilt
+  migrate:
+    build:
+      dockerfile: backend/Dockerfile.prebuilt

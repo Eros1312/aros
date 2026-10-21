@@ -1,0 +1,48 @@
+name: Verify Aros
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements-lock.txt
+      - run: python -m pip install -r backend/requirements-lock.txt
+      - run: python -m pytest -q
+        working-directory: backend
+      - name: Check fresh migrations
+        run: alembic upgrade head && alembic check
+        working-directory: backend
+        env:
+          DATABASE_URL: sqlite:///./migration-check.db
+  web:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --global pnpm@11.25.0
+      - run: pnpm install --frozen-lockfile
+        working-directory: web
+      - run: pnpm typecheck && pnpm test:unit && pnpm test:dom && pnpm build
+        working-directory: web
+  swift-source:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check experimental client models and source
+        run: zsh ios/check.sh

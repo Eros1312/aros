@@ -1,0 +1,128 @@
+name: aros
+x-runtime: &runtime
+  image: aros-suite:local
+  build:
+    context: ..
+    dockerfile: backend/Dockerfile
+  env_file: .env
+  restart: unless-stopped
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  cap_drop: [ALL]
+  security_opt: ['no-new-privileges:true']
+  depends_on:
+    database:
+      condition: service_healthy
+services:
+  freellmapi:
+    profiles: [providers]
+    image: ghcr.io/tashfeenahmed/freellmapi@sha256:0376544a26f8da07cf2959fcfcc04bad25240c6e5fe45d66058b13ee763998a3
+    user: '1000:1000'
+    entrypoint: [node, server/dist/index.js]
+    command: []
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      ENCRYPTION_KEY: ${FREELLM_ENCRYPTION_KEY:-not-configured}
+    ports: ['127.0.0.1:3001:3001']
+    volumes:
+      - freellm_data:/app/server/data
+    restart: unless-stopped
+    init: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+  openclaw:
+    profiles: [providers]
+    image: aros-openclaw:2026.9.7
+    build:
+      context: openclaw
+    environment:
+      OPENCLAW_MODEL: ${OPENCLAW_MODEL:-}
+      OPENCLAW_DESIGN_MODEL: ${OPENCLAW_DESIGN_MODEL:-}
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_TOKEN:-not-configured}
+      FREELLM_API_KEY: ${FREELLM_TOKEN:-not-configured}
+    volumes:
+      - openclaw_state:/home/node/.openclaw
+    expose: ['18789']
+    restart: unless-stopped
+    init: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+  database:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_USER: aros
+      POSTGRES_DB: aros
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run prepare_env.py first}
+    volumes:
+      - database:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U aros -d aros']
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    security_opt: ['no-new-privileges:true']
+  migrate:
+    <<: *runtime
+    restart: 'no'
+    command: [alembic, upgrade, head]
+  api:
+    <<: *runtime
+    depends_on:
+      database:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    expose: ['8000']
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health',timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+  worker:
+    <<: *runtime
+    command: [python, -m, app.worker]
+    healthcheck:
+      test: [CMD, python, -c, "from app.agent_runtime import healthcheck; healthcheck('worker')"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      api:
+        condition: service_healthy
+  agent_worker:
+    <<: *runtime
+    command: [python, -m, app.agent_worker]
+    healthcheck:
+      test: [CMD, python, -c, "from app.agent_runtime import healthcheck; healthcheck('agent-interactive'); healthcheck('agent-review')"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      api:
+        condition: service_healthy
+  proxy:
+    image: caddy:2-alpine
+    environment:
+      AROS_DOMAIN: ${AROS_DOMAIN:?Run prepare_env.py first}
+    ports: ['80:80', '443:443', '443:443/udp']
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    security_opt: ['no-new-privileges:true']
+volumes:
+  freellm_data:
+  openclaw_state:
+  database:
+  caddy_data:
+  caddy_config:

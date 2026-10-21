@@ -1,0 +1,16 @@
+const fs=require('node:fs'),path=require('node:path');
+const configPath='/home/node/.openclaw/openclaw.json';
+const config=JSON.parse(fs.readFileSync(configPath,'utf8'));
+const entry=JSON.parse(fs.readFileSync('/tmp/aros-planner-config.json','utf8'));
+if(!config.agents?.entries?.aros)throw Error('Expected existing Aros configuration');
+if(!process.env.OPENCLAW_MODEL||entry.model.primary!==process.env.OPENCLAW_MODEL||entry.model.fallbacks.length||entry.tools.allow.join()!=='session_status')throw Error('Invalid planner policy');
+const stamp=new Date().toISOString().replace(/[^0-9]/g,'');
+fs.copyFileSync(configPath,configPath+'.before-planner-'+stamp);fs.chmodSync(configPath+'.before-planner-'+stamp,0o600);
+config.agents.entries['aros-planner']=entry;
+config.tools.allow=[...new Set([...(config.tools.allow||[]),'session_status'])];
+fs.mkdirSync(entry.workspace,{recursive:true,mode:0o700});
+fs.copyFileSync('/tmp/aros-planner-AGENTS.md',path.join(entry.workspace,'AGENTS.md'));
+fs.writeFileSync(path.join(entry.workspace,'SOUL.md'),'Planificador JSON de las conversaciones y herramientas internas de Aros. Sigue el contrato por petición; sin identidad nueva, bootstrap, herramientas de host ni acceso externo.\n',{mode:0o600});
+fs.writeFileSync(path.join(entry.workspace,'BOOTSTRAP.md'),'No realizar onboarding: el agente ya está configurado como planificador JSON.\n',{mode:0o600});
+fs.writeFileSync(configPath+'.planner-new',JSON.stringify(config,null,2)+'\n',{mode:0o600});fs.renameSync(configPath+'.planner-new',configPath);
+console.log('Planner configured: explicit configured model only, no host/WhatsApp tools, minimal status registry, existing auth inheritance preserved.');
